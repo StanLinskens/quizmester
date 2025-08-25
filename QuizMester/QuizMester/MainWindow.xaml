@@ -1,0 +1,781 @@
+﻿<Window x:Class="QuizMester.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:QuizMester"
+        mc:Ignorable="d"
+       Title="Quizmester - Trivial Pursuit Style Quiz Game" Height="800" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        Background="#FF2C3E50">
+
+    <Window.Resources>
+        <!-- Trivial Pursuit Category Colors -->
+        <SolidColorBrush x:Key="GeographyColor" Color="#FF1ABC9C"/>
+        <!-- Green -->
+        <SolidColorBrush x:Key="EntertainmentColor" Color="#FFE91E63"/>
+        <!-- Pink -->
+        <SolidColorBrush x:Key="HistoryColor" Color="#FFFF9800"/>
+        <!-- Orange -->
+        <SolidColorBrush x:Key="ArtsColor" Color="#FF9C27B0"/>
+        <!-- Purple -->
+        <SolidColorBrush x:Key="ScienceColor" Color="#FF2196F3"/>
+        <!-- Blue -->
+        <SolidColorBrush x:Key="SportsColor" Color="#FFF44336"/>
+        <!-- Red -->
+
+        <!-- Button Styles -->
+        <Style x:Key="MenuButton" TargetType="Button">
+            <Setter Property="Background" Value="#FF34495E"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="25"
+                                BorderThickness="3"
+                                BorderBrush="#FF3498DB">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#FF3498DB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CategoryButton" TargetType="Button">
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Height" Value="120"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse Fill="{TemplateBinding Background}" 
+                                     Stroke="White" StrokeThickness="4"/>
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"
+                                            TextBlock.TextAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.1" ScaleY="1.1"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BoardSpot" TargetType="Button">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="FontSize" Value="8"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Polygon Points="20,2 38,12 38,28 20,38 2,28 2,12" 
+                                     Fill="{TemplateBinding Background}" 
+                                     Stroke="#FF34495E" StrokeThickness="2"/>
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.2" ScaleY="1.2"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TitleText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="28"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#FFECF0F1"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,15"/>
+        </Style>
+    </Window.Resources>
+
+    <TabControl x:Name="MainTabControl" TabStripPlacement="Top">
+
+        <!-- LOGIN SCREEN -->
+        <TabItem Header="Login" x:Name="LoginTab">
+            <Grid Background="#FF2C3E50">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="1" HorizontalAlignment="Center" Width="350">
+                    <TextBlock Text="🎲 QUIZMESTER" Style="{StaticResource TitleText}" FontSize="42"/>
+                    <TextBlock Text="Trivial Pursuit Style Quiz Game" 
+                               Foreground="#FFBDC3C7" FontSize="16" 
+                               HorizontalAlignment="Center" Margin="0,0,0,40"/>
+
+                    <Border Background="#FF34495E" CornerRadius="15" Padding="30">
+                        <StackPanel>
+                            <TextBlock Text="Username:" Foreground="White" FontWeight="SemiBold" Margin="0,5"/>
+                            <TextBox x:Name="UsernameTextBox" Padding="12" FontSize="14" 
+                                     Margin="0,5,0,15" Background="White"/>
+
+                            <TextBlock Text="Password:" Foreground="White" FontWeight="SemiBold" Margin="0,5"/>
+                            <PasswordBox x:Name="PasswordBox" Padding="12" FontSize="14" 
+                                         Margin="0,5,0,25" Background="White"/>
+
+                            <Button Content="LOGIN" Style="{StaticResource MenuButton}" 
+                                    Width="150" Height="45" Click="LoginButton_Click"/>
+                            <Button Content="REGISTER NEW USER" Style="{StaticResource MenuButton}" 
+                                    Background="#FFE74C3C" Width="200" Height="40" Margin="0,10"
+                                    Click="RegisterButton_Click"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </TabItem>
+
+        <!-- GAME BOARD SCREEN -->
+        <TabItem Header="Game Board" x:Name="GameBoardTab">
+            <Grid Background="#FF2C3E50">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Game Header -->
+                <Border Grid.Row="0" Background="#FF34495E" Padding="15">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <TextBlock x:Name="CurrentPlayerText" Text="Current Player: Stab" 
+                                       Foreground="White" FontSize="16" FontWeight="Bold" 
+                                       VerticalAlignment="Center" Margin="0,0,20,0"/>
+                            <TextBlock Text="Score: " Foreground="White" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="PlayerScoreText" Text="3/6 🧩" 
+                                       Foreground="#FFE67E22" FontSize="16" FontWeight="Bold" 
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" x:Name="DiceButton" Content="🎲 ROLL DICE" 
+                                Style="{StaticResource MenuButton}" Background="#FF27AE60" 
+                                Width="120" Height="40" Margin="10,0" Click="RollDice_Click"/>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <TextBlock x:Name="DiceResultText" Text="Dice: 4" 
+                                       Foreground="#FFECF0F1" FontSize="14" 
+                                       VerticalAlignment="Center" Margin="10,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Main Game Area -->
+                <Grid Grid.Row="1" Margin="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Game Board -->
+                    <Border Grid.Column="0" Background="#FF34495E" CornerRadius="15" 
+                            Margin="0,0,10,0" Padding="20">
+                        <Grid x:Name="GameBoard">
+                            <!-- Category Centers (Headquarters) -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" 
+                                        VerticalAlignment="Top" Margin="0,50,0,0">
+                                <Button Content="🌍&#10;GEO" Style="{StaticResource CategoryButton}" 
+                                        Background="{StaticResource GeographyColor}"
+                                        Click="CategorySelected_Click" Tag="Geography"/>
+                                <Button Content="🎭&#10;ENT" Style="{StaticResource CategoryButton}" 
+                                        Background="{StaticResource EntertainmentColor}"
+                                        Click="CategorySelected_Click" Tag="Entertainment"/>
+                            </StackPanel>
+
+                            <!-- Center Hub -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Button x:Name="CenterButton" Content="🎯&#10;HUB" 
+                                        Style="{StaticResource CategoryButton}" 
+                                        Background="#FF95A5A6" Width="100" Height="100"
+                                        Click="CenterHub_Click"/>
+                            </StackPanel>
+
+                            <!-- Bottom Categories -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" 
+                                        VerticalAlignment="Bottom" Margin="0,0,0,50">
+                                <Button Content="📚&#10;HIS" Style="{StaticResource CategoryButton}" 
+                                        Background="{StaticResource HistoryColor}"
+                                        Click="CategorySelected_Click" Tag="History"/>
+                                <Button Content="🎨&#10;ART" Style="{StaticResource CategoryButton}" 
+                                        Background="{StaticResource ArtsColor}"
+                                        Click="CategorySelected_Click" Tag="Arts"/>
+                            </StackPanel>
+
+                            <!-- Left and Right Categories -->
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" 
+                                        Margin="50,0,0,0">
+                                <Button Content="🔬&#10;SCI" Style="{StaticResource CategoryButton}" 
+                                        Background="{StaticResource ScienceColor}"
+                                        Click="CategorySelected_Click" Tag="Science"/>
+                            </StackPanel>
+
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                        Margin="0,0,50,0">
+                                <Button Content="⚽&#10;SPT" Style="{StaticResource CategoryButton}" 
+                                        Background="{StaticResource SportsColor}"
+                                        Click="CategorySelected_Click" Tag="Sports"/>
+                            </StackPanel>
+
+                            <!-- Player Token -->
+                            <Ellipse x:Name="PlayerToken" Width="20" Height="20" 
+                                     Fill="#FFFFFFFF" Stroke="#FF2C3E50" StrokeThickness="3"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Side Panel -->
+                    <StackPanel Grid.Column="1">
+                        <!-- Category Legend -->
+                        <Border Background="#FF34495E" CornerRadius="10" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <TextBlock Text="📋 CATEGORIES" Foreground="White" FontSize="16" 
+                                           FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Width="15" Height="15" Fill="{StaticResource GeographyColor}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Geography" Foreground="White" FontSize="12"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Width="15" Height="15" Fill="{StaticResource EntertainmentColor}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Entertainment" Foreground="White" FontSize="12"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Width="15" Height="15" Fill="{StaticResource HistoryColor}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="History" Foreground="White" FontSize="12"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Width="15" Height="15" Fill="{StaticResource ArtsColor}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Arts" Foreground="White" FontSize="12"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Width="15" Height="15" Fill="{StaticResource ScienceColor}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Science" Foreground="White" FontSize="12"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                    <Ellipse Width="15" Height="15" Fill="{StaticResource SportsColor}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Sports" Foreground="White" FontSize="12"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Collected Wedges -->
+                        <Border Background="#FF34495E" CornerRadius="10" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <TextBlock Text="🧩 YOUR WEDGES" Foreground="White" FontSize="16" 
+                                           FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+                                <StackPanel x:Name="CollectedWedges" Orientation="Horizontal" 
+                                            HorizontalAlignment="Center">
+                                    <!-- Wedges will be added programmatically -->
+                                </StackPanel>
+
+                                <TextBlock x:Name="WedgeCountText" Text="3 of 6 collected" 
+                                           Foreground="#FFBDC3C7" FontSize="12" 
+                                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Game Controls -->
+                        <Border Background="#FF34495E" CornerRadius="10" Padding="15">
+                            <StackPanel>
+                                <Button Content="📊 VIEW SCORES" Style="{StaticResource MenuButton}" 
+                                        Background="#FFE67E22" Margin="0,0,0,5" Click="ViewScores_Click"/>
+                                <Button Content="💾 SAVE GAME" Style="{StaticResource MenuButton}" 
+                                        Background="#FF3498DB" Margin="0,5" Click="SaveGame_Click"/>
+                                <Button Content="🚪 MAIN MENU" Style="{StaticResource MenuButton}" 
+                                        Background="#FF95A5A6" Margin="0,5,0,0" Click="MainMenu_Click"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </TabItem>
+
+        <!-- QUESTION SCREEN -->
+        <TabItem Header="Question" x:Name="QuestionTab">
+            <Grid Background="#FF2C3E50">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Question Header -->
+                <Border Grid.Row="0" Padding="20">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="{StaticResource GeographyColor}" 
+                                CornerRadius="25" Padding="15,8">
+                            <TextBlock x:Name="QuestionCategoryText" Text="🌍 GEOGRAPHY" 
+                                       Foreground="White" FontWeight="Bold" FontSize="16"/>
+                        </Border>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <TextBlock Text="⏱️ Time: " Foreground="White" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="QuestionTimerText" Text="30s" 
+                                       Foreground="#FFE74C3C" FontSize="16" FontWeight="Bold" 
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Question Area -->
+                <Border Grid.Row="1" Background="#FF34495E" Margin="20" CornerRadius="15" Padding="40">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="QuestionText" 
+                                   Text="What is the capital city of Australia?"
+                                   Foreground="White" FontSize="24" FontWeight="SemiBold" 
+                                   TextWrapping="Wrap" HorizontalAlignment="Center" 
+                                   Margin="0,0,0,40" TextAlignment="Center"/>
+
+                        <Grid MaxWidth="600">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button x:Name="AnswerA" Grid.Row="0" Grid.Column="0" 
+                                    Content="A) Sydney" Height="60" Margin="10"
+                                    Background="#FF3498DB" Foreground="White" FontSize="16"
+                                    Click="AnswerButton_Click" Tag="A"/>
+                            <Button x:Name="AnswerB" Grid.Row="0" Grid.Column="1" 
+                                    Content="B) Melbourne" Height="60" Margin="10"
+                                    Background="#FF3498DB" Foreground="White" FontSize="16"
+                                    Click="AnswerButton_Click" Tag="B"/>
+                            <Button x:Name="AnswerC" Grid.Row="1" Grid.Column="0" 
+                                    Content="C) Canberra" Height="60" Margin="10"
+                                    Background="#FF3498DB" Foreground="White" FontSize="16"
+                                    Click="AnswerButton_Click" Tag="C"/>
+                            <Button x:Name="AnswerD" Grid.Row="1" Grid.Column="1" 
+                                    Content="D) Perth" Height="60" Margin="10"
+                                    Background="#FF3498DB" Foreground="White" FontSize="16"
+                                    Click="AnswerButton_Click" Tag="D"/>
+                        </Grid>
+
+                        <!-- Timer Progress Bar -->
+                        <ProgressBar x:Name="TimerProgressBar" Height="8" Margin="0,30,0,0" 
+                                     Background="#FF7F8C8D" Foreground="#FFE74C3C" 
+                                     Value="100" Maximum="100"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Question Footer -->
+                <Border Grid.Row="2" Background="#FF34495E" Padding="20">
+                    <Grid>
+                        <TextBlock x:Name="QuestionProgressText" Text="This is for a wedge piece!" 
+                                   Foreground="#FFFDCB6E" FontSize="14" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                        <Button Content="⏭️ SKIP" Style="{StaticResource MenuButton}" 
+                                Background="#FF95A5A6" Width="80" Height="35" 
+                                HorizontalAlignment="Right" Click="SkipQuestion_Click"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </TabItem>
+
+        <!-- SCOREBOARD SCREEN -->
+        <TabItem Header="Scoreboard" x:Name="ScoreboardTab">
+            <Grid Background="#FF2C3E50">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="20">
+                    <TextBlock Text="🏆 HALL OF FAME" Style="{StaticResource TitleText}"/>
+                    <TextBlock Text="Top Quiz Masters" Foreground="#FFBDC3C7" FontSize="16" 
+                               HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                </StackPanel>
+
+                <Border Grid.Row="1" Background="#FF34495E" Margin="20" CornerRadius="15" Padding="20">
+                    <DataGrid x:Name="ScoreboardGrid" AutoGenerateColumns="False" 
+                              Background="Transparent" Foreground="White" 
+                              GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                              RowBackground="#FF2C3E50" AlternatingRowBackground="#FF34495E"
+                              BorderThickness="0">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="🏅 Rank" Binding="{Binding Rank}" Width="80"/>
+                            <DataGridTextColumn Header="👤 Player" Binding="{Binding Username}" Width="200"/>
+                            <DataGridTextColumn Header="🧩 Wedges" Binding="{Binding WedgesCollected}" Width="100"/>
+                            <DataGridTextColumn Header="✅ Questions" Binding="{Binding TotalCorrect}" Width="120"/>
+                            <DataGridTextColumn Header="📅 Date" Binding="{Binding GameDate}" Width="120"/>
+                            <DataGridTextColumn Header="⏱️ Time" Binding="{Binding GameDuration}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="20">
+                    <Button Content="🎮 NEW GAME" Style="{StaticResource MenuButton}" 
+                            Width="120" Height="45" Click="NewGame_Click"/>
+                    <Button Content="🏠 MAIN MENU" Style="{StaticResource MenuButton}" 
+                            Background="#FF3498DB" Width="120" Height="45" Click="MainMenu_Click"/>
+                </StackPanel>
+            </Grid>
+        </TabItem>
+
+        <!-- ADMIN PANEL -->
+        <TabItem Header="Admin Panel" x:Name="AdminTab">
+            <Grid Background="#FF2C3E50">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Margin="20">
+                    <TextBlock Text="⚙️ ADMIN CONTROL PANEL" Style="{StaticResource TitleText}"/>
+                    <TextBlock Text="Manage Questions and Players" Foreground="#FFBDC3C7" FontSize="16" 
+                               HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                </StackPanel>
+
+                <TabControl Grid.Row="1" Margin="20" Background="#FF34495E">
+
+                    <!-- Question Management -->
+                    <TabItem Header="📝 Questions">
+                        <Grid Margin="20">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                                <ComboBox x:Name="AdminCategoryFilter" Width="150" Height="30" 
+                                          Background="White" Margin="0,0,10,0">
+                                    <ComboBoxItem Content="All Categories"/>
+                                    <ComboBoxItem Content="Geography"/>
+                                    <ComboBoxItem Content="Entertainment"/>
+                                    <ComboBoxItem Content="History"/>
+                                    <ComboBoxItem Content="Arts"/>
+                                    <ComboBoxItem Content="Science"/>
+                                    <ComboBoxItem Content="Sports"/>
+                                </ComboBox>
+                                <Button Content="➕ ADD QUESTION" Style="{StaticResource MenuButton}" 
+                                        Background="#FF27AE60" Click="AddQuestion_Click"/>
+                                <Button Content="💾 SAVE TO JSON" Style="{StaticResource MenuButton}" 
+                                        Background="#FF3498DB" Margin="10,0,0,0" Click="SaveQuestionsJson_Click"/>
+                            </StackPanel>
+
+                            <DataGrid x:Name="AdminQuestionsGrid" Grid.Row="1" AutoGenerateColumns="False" 
+                                      Background="White" Margin="0,0,0,15">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                                    <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="100"/>
+                                    <DataGridTextColumn Header="Question" Binding="{Binding QuestionText}" Width="350"/>
+                                    <DataGridTextColumn Header="Correct" Binding="{Binding CorrectAnswer}" Width="100"/>
+                                    <DataGridTemplateColumn Header="Actions" Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="✏️" Background="#FF3498DB" 
+                                                            Foreground="White" Margin="2" Padding="5,2"
+                                                            Click="EditQuestion_Click" ToolTip="Edit"/>
+                                                    <Button Content="🗑️" Background="#FFE74C3C" 
+                                                            Foreground="White" Margin="2" Padding="5,2"
+                                                            Click="DeleteQuestion_Click" ToolTip="Delete"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- User Management -->
+                    <TabItem Header="👥 Players">
+                        <Grid Margin="20">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                                <TextBlock Text="👥 Player Management" Foreground="White" 
+                                           FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button Content="💾 SAVE USERS TO JSON" Style="{StaticResource MenuButton}" 
+                                        Background="#FF3498DB" Margin="20,0,0,0" Click="SaveUsersJson_Click"/>
+                            </StackPanel>
+
+                            <DataGrid x:Name="AdminUsersGrid" Grid.Row="1" AutoGenerateColumns="False" 
+                                      Background="White" Margin="0,0,0,15">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                                    <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="150"/>
+                                    <DataGridTextColumn Header="Registered" Binding="{Binding RegisterDate}" Width="120"/>
+                                    <DataGridTextColumn Header="Games Played" Binding="{Binding GamesPlayed}" Width="100"/>
+                                    <DataGridTextColumn Header="Best Score" Binding="{Binding BestScore}" Width="100"/>
+                                    <DataGridTextColumn Header="Total Wedges" Binding="{Binding TotalWedges}" Width="100"/>
+                                    <DataGridTemplateColumn Header="Actions" Width="80">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="🗑️" Background="#FFE74C3C" 
+                                                        Foreground="White" Padding="5,2"
+                                                        Click="DeleteUser_Click" ToolTip="Delete User"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <TextBlock Grid.Row="2" x:Name="PlayerStatsText" 
+                                       Text="Total Players: 0 | Active This Month: 0 | JSON Last Updated: Never" 
+                                       Foreground="#FFBDC3C7" FontSize="12" HorizontalAlignment="Center"/>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- JSON Data Management -->
+                    <TabItem Header="💾 JSON Data">
+                        <Grid Margin="20">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                                <TextBlock Text="💾 JSON File Management" Foreground="White" 
+                                           FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Content="📁 LOAD QUESTIONS" Style="{StaticResource MenuButton}" 
+                                            Background="#FF27AE60" Margin="5" Click="LoadQuestionsJson_Click"/>
+                                    <Button Content="💾 SAVE QUESTIONS" Style="{StaticResource MenuButton}" 
+                                            Background="#FF3498DB" Margin="5" Click="SaveQuestionsJson_Click"/>
+                                    <Button Content="📁 LOAD USERS" Style="{StaticResource MenuButton}" 
+                                            Background="#FF27AE60" Margin="5" Click="LoadUsersJson_Click"/>
+                                    <Button Content="💾 SAVE USERS" Style="{StaticResource MenuButton}" 
+                                            Background="#FF3498DB" Margin="5" Click="SaveUsersJson_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Questions JSON Preview -->
+                                <Border Grid.Column="0" Background="White" CornerRadius="10" 
+                                        Margin="0,0,10,0" Padding="15">
+                                    <StackPanel>
+                                        <TextBlock Text="📝 Questions JSON Structure" FontWeight="Bold" 
+                                                   Foreground="#FF2C3E50" FontSize="14" Margin="0,0,0,10"/>
+                                        <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto">
+                                            <TextBlock x:Name="QuestionsJsonPreview" FontFamily="Consolas" FontSize="10"
+                                                       Foreground="#FF2C3E50" TextWrapping="Wrap"
+                                                       Text="{}{&#10;  &quot;questions&quot;: [&#10;    {&#10;      &quot;id&quot;: 1,&#10;      &quot;category&quot;: &quot;Geography&quot;,&#10;      &quot;question&quot;: &quot;What is the capital of France?&quot;,&#10;      &quot;answers&quot;: [&quot;Paris&quot;, &quot;London&quot;, &quot;Berlin&quot;, &quot;Madrid&quot;],&#10;      &quot;correctAnswer&quot;: 0,&#10;      &quot;difficulty&quot;: &quot;Easy&quot;&#10;    },&#10;    ...&#10;  ]&#10;}"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Users JSON Preview -->
+                                <Border Grid.Column="1" Background="White" CornerRadius="10" 
+                                        Margin="10,0,0,0" Padding="15">
+                                    <StackPanel>
+                                        <TextBlock Text="👤 Users JSON Structure" FontWeight="Bold" 
+                                                   Foreground="#FF2C3E50" FontSize="14" Margin="0,0,0,10"/>
+                                        <ScrollViewer Height="300" VerticalScrollBarVisibility="Auto">
+                                            <TextBlock x:Name="UsersJsonPreview" FontFamily="Consolas" FontSize="10"
+                                                       Foreground="#FF2C3E50" TextWrapping="Wrap"
+                                                       Text="{}{&#10;  &quot;users&quot;: [&#10;    {&#10;      &quot;id&quot;: 1,&#10;      &quot;username&quot;: &quot;thomas&quot;,&#10;      &quot;password&quot;: &quot;hashed_password&quot;,&#10;      &quot;registerDate&quot;: &quot;2025-08-18&quot;,&#10;      &quot;gamesPlayed&quot;: 15,&#10;      &quot;bestScore&quot;: 6,&#10;      &quot;totalWedges&quot;: 42,&#10;      &quot;isAdmin&quot;: true&#10;    },&#10;    ...&#10;  ]&#10;}"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </TabItem>
+
+                </TabControl>
+            </Grid>
+        </TabItem>
+
+        <!-- GAME RESULTS -->
+        <TabItem Header="Game Results" x:Name="GameResultsTab">
+            <Grid Background="#FF2C3E50">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="600">
+                    <TextBlock x:Name="GameResultTitle" Text="🎉 CONGRATULATIONS!" 
+                               Style="{StaticResource TitleText}" FontSize="36"/>
+
+                    <Border Background="#FF34495E" CornerRadius="20" Padding="40" Margin="20">
+                        <StackPanel>
+                            <TextBlock x:Name="GameResultText" 
+                                       Text="You've collected all 6 wedges and won the game!" 
+                                       Foreground="#FFECF0F1" FontSize="20" FontWeight="SemiBold" 
+                                       HorizontalAlignment="Center" TextAlignment="Center"
+                                       Margin="0,0,0,25" TextWrapping="Wrap"/>
+
+                            <!-- Show collected wedges -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" 
+                                        Margin="0,0,0,20">
+                                <Ellipse Width="30" Height="30" Fill="{StaticResource GeographyColor}" Margin="5"/>
+                                <Ellipse Width="30" Height="30" Fill="{StaticResource EntertainmentColor}" Margin="5"/>
+                                <Ellipse Width="30" Height="30" Fill="{StaticResource HistoryColor}" Margin="5"/>
+                                <Ellipse Width="30" Height="30" Fill="{StaticResource ArtsColor}" Margin="5"/>
+                                <Ellipse Width="30" Height="30" Fill="{StaticResource ScienceColor}" Margin="5"/>
+                                <Ellipse Width="30" Height="30" Fill="{StaticResource SportsColor}" Margin="5"/>
+                            </StackPanel>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="🧩 Wedges Collected:" 
+                                           Foreground="White" FontSize="14" HorizontalAlignment="Right" Margin="0,5,10,5"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="WedgesCollectedText" Text="6/6" 
+                                           Foreground="#FF27AE60" FontSize="16" FontWeight="Bold" Margin="10,5,0,5"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="✅ Questions Correct:" 
+                                           Foreground="White" FontSize="14" HorizontalAlignment="Right" Margin="0,5,10,5"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="QuestionsCorrectText" Text="28/35" 
+                                           Foreground="#FF3498DB" FontSize="16" FontWeight="Bold" Margin="10,5,0,5"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="⏱️ Game Duration:" 
+                                           Foreground="White" FontSize="14" HorizontalAlignment="Right" Margin="0,5,10,5"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="GameDurationText" Text="12:35" 
+                                           Foreground="#FFFDCB6E" FontSize="16" FontWeight="Bold" Margin="10,5,0,5"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="20">
+                        <Button Content="🎮 PLAY AGAIN" Style="{StaticResource MenuButton}" 
+                                Width="150" Height="50" FontSize="16" Click="PlayAgain_Click"/>
+                        <Button Content="🏆 VIEW SCORES" Style="{StaticResource MenuButton}" 
+                                Background="#FFFDCB6E" Width="150" Height="50" FontSize="16"
+                                Click="ViewScores_Click"/>
+                        <Button Content="🏠 MAIN MENU" Style="{StaticResource MenuButton}" 
+                                Background="#FF3498DB" Width="150" Height="50" FontSize="16"
+                                Click="MainMenu_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </TabItem>
+
+        <!-- ADD/EDIT QUESTION DIALOG -->
+        <TabItem Header="Question Editor" x:Name="QuestionEditorTab" Visibility="Collapsed">
+            <Grid Background="#FF2C3E50">
+                <Border Background="#FF34495E" CornerRadius="15" Margin="50" Padding="30">
+                    <StackPanel MaxWidth="600">
+                        <TextBlock Text="📝 Question Editor" Style="{StaticResource TitleText}" FontSize="24"/>
+
+                        <TextBlock Text="Category:" Foreground="White" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                        <ComboBox x:Name="EditCategoryCombo" Height="35" FontSize="14" Background="White">
+                            <ComboBoxItem Content="Geography"/>
+                            <ComboBoxItem Content="Entertainment"/>
+                            <ComboBoxItem Content="History"/>
+                            <ComboBoxItem Content="Arts"/>
+                            <ComboBoxItem Content="Science"/>
+                            <ComboBoxItem Content="Sports"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Question:" Foreground="White" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                        <TextBox x:Name="EditQuestionText" Height="60" FontSize="14" Background="White" 
+                                 TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+
+                        <TextBlock Text="Answer A:" Foreground="White" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                        <TextBox x:Name="EditAnswerA" Height="30" FontSize="14" Background="White"/>
+
+                        <TextBlock Text="Answer B:" Foreground="White" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                        <TextBox x:Name="EditAnswerB" Height="30" FontSize="14" Background="White"/>
+
+                        <TextBlock Text="Answer C:" Foreground="White" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                        <TextBox x:Name="EditAnswerC" Height="30" FontSize="14" Background="White"/>
+
+                        <TextBlock Text="Answer D:" Foreground="White" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                        <TextBox x:Name="EditAnswerD" Height="30" FontSize="14" Background="White"/>
+
+                        <TextBlock Text="Correct Answer:" Foreground="White" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                        <ComboBox x:Name="EditCorrectAnswer" Height="35" FontSize="14" Background="White">
+                            <ComboBoxItem Content="A" Tag="0"/>
+                            <ComboBoxItem Content="B" Tag="1"/>
+                            <ComboBoxItem Content="C" Tag="2"/>
+                            <ComboBoxItem Content="D" Tag="3"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Difficulty:" Foreground="White" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                        <ComboBox x:Name="EditDifficulty" Height="35" FontSize="14" Background="White">
+                            <ComboBoxItem Content="Easy"/>
+                            <ComboBoxItem Content="Medium"/>
+                            <ComboBoxItem Content="Hard"/>
+                        </ComboBox>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,25,0,0">
+                            <Button Content="💾 SAVE QUESTION" Style="{StaticResource MenuButton}" 
+                                    Background="#FF27AE60" Width="150" Height="40" 
+                                    Click="SaveQuestion_Click"/>
+                            <Button Content="❌ CANCEL" Style="{StaticResource MenuButton}" 
+                                    Background="#FF95A5A6" Width="120" Height="40" 
+                                    Click="CancelEdit_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </TabItem>
+
+    </TabControl>
+</Window>
+                
