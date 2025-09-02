@@ -254,7 +254,7 @@
                         <StackPanel Grid.Row="0" Grid.Column="0" HorizontalAlignment="Right">
                             <Ellipse x:Name="ScienceWedge" 
                  Fill="{StaticResource ScienceColor}" 
-                 Style="{StaticResource CategoryWedge}"/>
+                 Style="{StaticResource CategoryWedge}" Tag="Science" MouseLeftButtonDown="CategoryWedge_Click"/>
                             <TextBlock Text="🔬 SCIENCE" FontWeight="Bold" 
                    HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="ScienceStatusText" Text="Not Completed" 
@@ -266,7 +266,7 @@
                         <StackPanel Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left">
                             <Ellipse x:Name="LiteratureWedge" 
                  Fill="{StaticResource LiteratureColor}" 
-                 Style="{StaticResource CategoryWedge}"/>
+                 Style="{StaticResource CategoryWedge}" Tag="Literature" MouseLeftButtonDown="CategoryWedge_Click"/>
                             <TextBlock Text="📚 LITERATURE" FontWeight="Bold" 
                    HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="LiteratureStatusText" Text="Not Completed" 
@@ -278,7 +278,7 @@
                         <StackPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center">
                             <Ellipse x:Name="HistoryWedge" 
                  Fill="{StaticResource HistoryColor}" 
-                 Style="{StaticResource CategoryWedge}"/>
+                 Style="{StaticResource CategoryWedge}" Tag="History" MouseLeftButtonDown="CategoryWedge_Click"/>
                             <TextBlock Text="🏛️ HISTORY" FontWeight="Bold" 
                    HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="HistoryStatusText" Text="Not Completed" 
@@ -291,7 +291,7 @@
                             <Ellipse x:Name="FinalWedge" Fill="#1F2937" 
                  Width="100" Height="100" 
                  Stroke="Gold" StrokeThickness="4"
-                 Margin="10"/>
+                 Margin="10" Tag="Final" MouseLeftButtonDown="CategoryWedge_Click"/>
                             <TextBlock Text="🏆 FINAL" FontWeight="Bold" 
                    HorizontalAlignment="Center" Margin="0,10"/>
                             <TextBlock Text="CHALLENGE" FontWeight="Bold" 
@@ -305,7 +305,7 @@
                         <StackPanel Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center">
                             <Ellipse x:Name="SportsWedge" 
                  Fill="{StaticResource SportsColor}" 
-                 Style="{StaticResource CategoryWedge}"/>
+                 Style="{StaticResource CategoryWedge}" Tag="Sports" MouseLeftButtonDown="CategoryWedge_Click"/>
                             <TextBlock Text="⚽ SPORTS" FontWeight="Bold" 
                    HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="SportsStatusText" Text="Not Completed" 
@@ -317,7 +317,7 @@
                         <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right">
                             <Ellipse x:Name="EntertainmentWedge" 
                  Fill="{StaticResource EntertainmentColor}" 
-                 Style="{StaticResource CategoryWedge}"/>
+                 Style="{StaticResource CategoryWedge}" Tag="Entertainment" MouseLeftButtonDown="CategoryWedge_Click"/>
                             <TextBlock Text="🎬 ENTERTAINMENT" FontWeight="Bold" 
                    HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="EntertainmentStatusText" Text="Not Completed" 
@@ -329,7 +329,7 @@
                         <StackPanel Grid.Row="2" Grid.Column="2" HorizontalAlignment="Left">
                             <Ellipse x:Name="GeographyWedge" 
                  Fill="{StaticResource GeographyColor}" 
-                 Style="{StaticResource CategoryWedge}"/>
+                 Style="{StaticResource CategoryWedge}" Tag="Geography" MouseLeftButtonDown="CategoryWedge_Click"/>
                             <TextBlock Text="🌍 GEOGRAPHY" FontWeight="Bold" 
                    HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="GeographyStatusText" Text="Not Completed" 

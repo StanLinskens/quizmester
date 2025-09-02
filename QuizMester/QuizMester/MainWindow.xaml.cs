@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.Design;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Shapes;
 
 namespace QuizMester
 {
@@ -166,5 +168,23 @@ namespace QuizMester
         {
             changeGrid(ScoreboardScreen);
         }
+
+        private void CategoryWedge_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Ellipse clickedWedge && clickedWedge.Tag is string category)
+            {
+                StartGame(category);
+                changeGrid(QuizScreen);
+            }
+        }
+
+        private void StartGame(string category)
+        {
+            // Example: show a message, or navigate to your game logic
+            MessageBox.Show($"Starting {category} game!");
+
+            // TODO: Replace with your actual game start logic
+        }
+
     }
 }
