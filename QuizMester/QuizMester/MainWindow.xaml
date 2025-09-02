@@ -181,7 +181,7 @@
 
                         <Button x:Name="AdminLoginButton" Content="Admin Login" 
                                 Style="{StaticResource ModernButton}" 
-                                Background="#6B7280" Margin="0,10"/>
+                                Background="#6B7280" Margin="0,10" Click="AdminLoginButton_Click_1"/>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -219,7 +219,7 @@
                                 Content="📊 Scoreboard" 
                                 Style="{StaticResource ModernButton}" 
                                 Background="{StaticResource AccentGold}" 
-                                VerticalAlignment="Center" Margin="10"/>
+                                VerticalAlignment="Center" Margin="10" Click="ScoreboardButton_Click"/>
                     </Grid>
                 </Border>
 
@@ -251,78 +251,90 @@
                         </Grid.ColumnDefinitions>
 
                         <!-- Science Category -->
-                        <StackPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center">
+                        <StackPanel Grid.Row="0" Grid.Column="0" HorizontalAlignment="Right">
                             <Ellipse x:Name="ScienceWedge" 
-                                     Fill="{StaticResource ScienceColor}" 
-                                     Style="{StaticResource CategoryWedge}"/>
+                 Fill="{StaticResource ScienceColor}" 
+                 Style="{StaticResource CategoryWedge}"/>
                             <TextBlock Text="🔬 SCIENCE" FontWeight="Bold" 
-                                       HorizontalAlignment="Center" Margin="0,10"/>
+                   HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="ScienceStatusText" Text="Not Completed" 
-                                       FontSize="12" HorizontalAlignment="Center" 
-                                       Foreground="#6B7280"/>
+                   FontSize="12" HorizontalAlignment="Center" 
+                   Foreground="#6B7280"/>
+                        </StackPanel>
+
+                        <!-- Literature Category -->
+                        <StackPanel Grid.Row="0" Grid.Column="2" HorizontalAlignment="Left">
+                            <Ellipse x:Name="LiteratureWedge" 
+                 Fill="{StaticResource LiteratureColor}" 
+                 Style="{StaticResource CategoryWedge}"/>
+                            <TextBlock Text="📚 LITERATURE" FontWeight="Bold" 
+                   HorizontalAlignment="Center" Margin="0,0"/>
+                            <TextBlock x:Name="LiteratureStatusText" Text="Not Completed" 
+                   FontSize="12" HorizontalAlignment="Center" 
+                   Foreground="#6B7280"/>
                         </StackPanel>
 
                         <!-- History Category -->
                         <StackPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center">
                             <Ellipse x:Name="HistoryWedge" 
-                                     Fill="{StaticResource HistoryColor}" 
-                                     Style="{StaticResource CategoryWedge}"/>
+                 Fill="{StaticResource HistoryColor}" 
+                 Style="{StaticResource CategoryWedge}"/>
                             <TextBlock Text="🏛️ HISTORY" FontWeight="Bold" 
-                                       HorizontalAlignment="Center" Margin="0,10"/>
+                   HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="HistoryStatusText" Text="Not Completed" 
-                                       FontSize="12" HorizontalAlignment="Center" 
-                                       Foreground="#6B7280"/>
+                   FontSize="12" HorizontalAlignment="Center" 
+                   Foreground="#6B7280"/>
                         </StackPanel>
 
                         <!-- Center Hub -->
                         <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center">
                             <Ellipse x:Name="FinalWedge" Fill="#1F2937" 
-                                     Width="100" Height="100" 
-                                     Stroke="Gold" StrokeThickness="4"
-                                     Margin="10"/>
+                 Width="100" Height="100" 
+                 Stroke="Gold" StrokeThickness="4"
+                 Margin="10"/>
                             <TextBlock Text="🏆 FINAL" FontWeight="Bold" 
-                                       HorizontalAlignment="Center" Margin="0,10"/>
+                   HorizontalAlignment="Center" Margin="0,10"/>
                             <TextBlock Text="CHALLENGE" FontWeight="Bold" 
-                                       HorizontalAlignment="Center"/>
+                   HorizontalAlignment="Center"/>
                             <TextBlock x:Name="FinalStatusText" Text="Locked" 
-                                       FontSize="12" HorizontalAlignment="Center" 
-                                       Foreground="#EF4444" Margin="0,5"/>
+                   FontSize="12" HorizontalAlignment="Center" 
+                   Foreground="#EF4444" Margin="0,5"/>
                         </StackPanel>
 
                         <!-- Sports Category -->
                         <StackPanel Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center">
                             <Ellipse x:Name="SportsWedge" 
-                                     Fill="{StaticResource SportsColor}" 
-                                     Style="{StaticResource CategoryWedge}"/>
+                 Fill="{StaticResource SportsColor}" 
+                 Style="{StaticResource CategoryWedge}"/>
                             <TextBlock Text="⚽ SPORTS" FontWeight="Bold" 
-                                       HorizontalAlignment="Center" Margin="0,10"/>
+                   HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="SportsStatusText" Text="Not Completed" 
-                                       FontSize="12" HorizontalAlignment="Center" 
-                                       Foreground="#6B7280"/>
+                   FontSize="12" HorizontalAlignment="Center" 
+                   Foreground="#6B7280"/>
                         </StackPanel>
 
                         <!-- Entertainment Category -->
-                        <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center">
+                        <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Right">
                             <Ellipse x:Name="EntertainmentWedge" 
-                                     Fill="{StaticResource EntertainmentColor}" 
-                                     Style="{StaticResource CategoryWedge}"/>
+                 Fill="{StaticResource EntertainmentColor}" 
+                 Style="{StaticResource CategoryWedge}"/>
                             <TextBlock Text="🎬 ENTERTAINMENT" FontWeight="Bold" 
-                                       HorizontalAlignment="Center" Margin="0,10"/>
+                   HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="EntertainmentStatusText" Text="Not Completed" 
-                                       FontSize="12" HorizontalAlignment="Center" 
-                                       Foreground="#6B7280"/>
+                   FontSize="12" HorizontalAlignment="Center" 
+                   Foreground="#6B7280"/>
                         </StackPanel>
 
                         <!-- Geography Category -->
-                        <StackPanel Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center">
+                        <StackPanel Grid.Row="2" Grid.Column="2" HorizontalAlignment="Left">
                             <Ellipse x:Name="GeographyWedge" 
-                                     Fill="{StaticResource GeographyColor}" 
-                                     Style="{StaticResource CategoryWedge}"/>
+                 Fill="{StaticResource GeographyColor}" 
+                 Style="{StaticResource CategoryWedge}"/>
                             <TextBlock Text="🌍 GEOGRAPHY" FontWeight="Bold" 
-                                       HorizontalAlignment="Center" Margin="0,10"/>
+                   HorizontalAlignment="Center" Margin="0,0"/>
                             <TextBlock x:Name="GeographyStatusText" Text="Not Completed" 
-                                       FontSize="12" HorizontalAlignment="Center" 
-                                       Foreground="#6B7280"/>
+                   FontSize="12" HorizontalAlignment="Center" 
+                   Foreground="#6B7280"/>
                         </StackPanel>
                     </Grid>
 
@@ -336,7 +348,7 @@
                             <!-- These will be populated dynamically -->
                         </StackPanel>
 
-                        <TextBlock x:Name="PiecesCountText" Text="(0/5)" 
+                        <TextBlock x:Name="PiecesCountText" Text="(0/6)" 
                                    FontSize="16" VerticalAlignment="Center" 
                                    Margin="10,0,0,0"/>
                     </StackPanel>
@@ -349,7 +361,7 @@
                                 VerticalAlignment="Center">
                         <Button x:Name="LogoutButton" Content="Logout" 
                                 Style="{StaticResource ModernButton}" 
-                                Background="#6B7280"/>
+                                Background="#6B7280" Click="LogoutButton_Click"/>
                         <Button x:Name="ProfileButton" Content="Profile" 
                                 Style="{StaticResource ModernButton}"/>
                     </StackPanel>
@@ -486,7 +498,7 @@
                                 Style="{StaticResource ModernButton}" 
                                 Background="{StaticResource ErrorRed}" 
                                 HorizontalAlignment="Left" VerticalAlignment="Center" 
-                                Margin="40,0"/>
+                                Margin="40,0" Click="QuitQuizButton_Click"/>
 
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock x:Name="FeedbackText" Text="" 
@@ -506,7 +518,7 @@
                                     Content="Skip Question" 
                                     Style="{StaticResource ModernButton}" 
                                     Background="{StaticResource WarningOrange}" 
-                                    Margin="0,0,10,0"/>
+                                    Margin="0,0,10,0" Click="SkipQuestionButton_Click"/>
                             <TextBlock x:Name="SkipStatusText" Text="(1 skip available)" 
                                        FontSize="12" VerticalAlignment="Center" 
                                        Foreground="#6B7280"/>
@@ -567,7 +579,7 @@
                             Content="Back to Game" 
                             Style="{StaticResource ModernButton}" 
                             HorizontalAlignment="Center" 
-                            VerticalAlignment="Center"/>
+                            VerticalAlignment="Center" Click="BackToGameButton_Click"/>
                 </Border>
             </Grid>
 
@@ -581,7 +593,7 @@
                 </Grid.Background>
 
                 <Border Background="White" 
-                        Width="500" Height="600" 
+                        Width="500" Height="663" 
                         CornerRadius="15"
                         VerticalAlignment="Center" 
                         HorizontalAlignment="Center">
@@ -654,15 +666,15 @@
                             <Button x:Name="ContinueGameButton" 
                                     Content="Continue Game" 
                                     Style="{StaticResource PrimaryButton}" 
-                                    Margin="0,0,0,10"/>
+                                    Margin="0,0,0,10" Click="ContinueGameButton_Click"/>
                             <Button x:Name="ViewScoreboardButton" 
                                     Content="View Scoreboard" 
                                     Style="{StaticResource ModernButton}" 
-                                    Margin="0,0,0,10"/>
+                                    Margin="0,0,0,10" Click="ViewScoreboardButton_Click"/>
                             <Button x:Name="BackToMenuButton" 
                                     Content="Back to Main Menu" 
                                     Style="{StaticResource ModernButton}" 
-                                    Background="#6B7280"/>
+                                    Background="#6B7280" Click="BackToMenuButton_Click"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -706,6 +718,8 @@
                             <Ellipse Fill="{StaticResource SportsColor}" Width="50" Height="50" Margin="5"/>
                             <Ellipse Fill="{StaticResource EntertainmentColor}" Width="50" Height="50" Margin="5"/>
                             <Ellipse Fill="{StaticResource GeographyColor}" Width="50" Height="50" Margin="5"/>
+                            <Ellipse Fill="{StaticResource LiteratureColor}" Width="50" Height="50" Margin="5"/>
+
                         </StackPanel>
 
                         <TextBlock Text="The Final Challenge contains 20 difficult questions from ALL categories." 
@@ -790,7 +804,7 @@
                                 Background="{StaticResource ErrorRed}"
                                 HorizontalAlignment="Right" 
                                 VerticalAlignment="Center" 
-                                Margin="20"/>
+                                Margin="20" Click="AdminLogoutButton_Click_1"/>
                     </Grid>
                 </Border>
 
@@ -866,6 +880,7 @@
                                     <ComboBoxItem Content="Sports"/>
                                     <ComboBoxItem Content="Entertainment"/>
                                     <ComboBoxItem Content="Geography"/>
+                                    <ComboBoxItem Content="Literature"/>
                                 </ComboBox>
                             </StackPanel>
 
@@ -910,7 +925,7 @@
             <Grid x:Name="CategorySelectionOverlay" Visibility="Collapsed" 
                   Background="#80000000">
                 <Border Background="White" 
-                        Width="400" Height="300" 
+                        Width="400" Height="546" 
                         CornerRadius="15"
                         VerticalAlignment="Center" 
                         HorizontalAlignment="Center">
@@ -939,6 +954,10 @@
                             <Button x:Name="SelectGeographyButton" Content="🌍 Geography" 
                                     Style="{StaticResource ModernButton}" 
                                     Background="{StaticResource GeographyColor}" 
+                                    Height="40" Margin="0,5"/>
+                            <Button x:Name="SelectLiteratureButton" Content="📚 Literature" 
+                                    Style="{StaticResource ModernButton}" 
+                                    Background="{StaticResource LiteratureColor}" 
                                     Height="40" Margin="0,5"/>
                         </StackPanel>
 
@@ -979,6 +998,7 @@
                                         <ComboBoxItem Content="Sports"/>
                                         <ComboBoxItem Content="Entertainment"/>
                                         <ComboBoxItem Content="Geography"/>
+                                        <ComboBoxItem Content="Literature"/>
                                     </ComboBox>
                                 </StackPanel>
 
@@ -1031,7 +1051,7 @@
             <Grid x:Name="LoadingScreen" Visibility="Collapsed" 
                   Background="#80000000">
                 <Border Background="White" 
-                        Width="300" Height="150" 
+                        Width="300" Height="170" 
                         CornerRadius="15"
                         VerticalAlignment="Center" 
                         HorizontalAlignment="Center">

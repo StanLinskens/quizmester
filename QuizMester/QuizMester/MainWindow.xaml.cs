@@ -1,38 +1,24 @@
-﻿using System;
-using Microsoft.Data.SqlClient;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System.ComponentModel.Design;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace QuizMester
 {
     public partial class MainWindow : Window
     {
-        // ⚡ Connection string (change "YourDatabaseName" to your DB)
-        private readonly string connectionString =
-            @"Data Source=localhost\sqlexpress;Initial Catalog=QuizmesterDatabase;Integrated Security=True;Encrypt=True;TrustServerCertificate=True";
+        private readonly AuthService authService = new AuthService();
+
+        Grid currentGrid;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            // Hook up event handlers
+            currentGrid = LoginScreen;
+
             LoginButton.Click += LoginButton_Click;
             RegisterButton.Click += RegisterButton_Click;
             AdminLoginButton.Click += AdminLoginButton_Click;
-        }
-
-        // 🔐 Hash passwords with SHA256
-        private string HashPassword(string password)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                StringBuilder sb = new StringBuilder();
-                foreach (byte b in bytes)
-                    sb.Append(b.ToString("x2"));
-                return sb.ToString();
-            }
         }
 
         // 🟢 Login
@@ -47,29 +33,14 @@ namespace QuizMester
                 return;
             }
 
-            string hash = HashPassword(password);
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            if (authService.Login(username, password, false))
             {
-                conn.Open();
-                string query = "SELECT COUNT(*) FROM Users WHERE Username=@u AND PasswordHash=@p AND IsAdmin=0";
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@u", username);
-                    cmd.Parameters.AddWithValue("@p", hash);
-
-                    int count = (int)cmd.ExecuteScalar();
-
-                    if (count > 0)
-                    {
-                        MessageBox.Show("Login successful! 🎉");
-                        // TODO: Open quiz window
-                    }
-                    else
-                    {
-                        MessageBox.Show("Invalid username or password.");
-                    }
-                }
+                MessageBox.Show("Login successful! 🎉");
+                changeGrid(GameBoardScreen);
+            }
+            else
+            {
+                MessageBox.Show("Invalid username or password.");
             }
         }
 
@@ -92,35 +63,13 @@ namespace QuizMester
                 return;
             }
 
-            string hash = HashPassword(password);
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            if (authService.Register(username, password))
             {
-                conn.Open();
-
-                // Check if username already exists
-                string checkQuery = "SELECT COUNT(*) FROM Users WHERE Username=@u";
-                using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
-                {
-                    checkCmd.Parameters.AddWithValue("@u", username);
-                    int exists = (int)checkCmd.ExecuteScalar();
-                    if (exists > 0)
-                    {
-                        MessageBox.Show("Username already exists.");
-                        return;
-                    }
-                }
-
-                // Insert new user
-                string insertQuery = "INSERT INTO Users (Username, PasswordHash) VALUES (@u, @p)";
-                using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
-                {
-                    insertCmd.Parameters.AddWithValue("@u", username);
-                    insertCmd.Parameters.AddWithValue("@p", hash);
-                    insertCmd.ExecuteNonQuery();
-                }
-
                 MessageBox.Show("Registration successful! 🎉 You can now log in.");
+            }
+            else
+            {
+                MessageBox.Show("Username already exists.");
             }
         }
 
@@ -136,30 +85,86 @@ namespace QuizMester
                 return;
             }
 
-            string hash = HashPassword(password);
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            if (authService.Login(username, password, true))
             {
-                conn.Open();
-                string query = "SELECT COUNT(*) FROM Users WHERE Username=@u AND PasswordHash=@p AND IsAdmin=1";
-                using (SqlCommand cmd = new SqlCommand(query, conn))
+                MessageBox.Show("Admin login successful! 👑");
+                // TODO: Open admin dashboard
+            }
+            else
+            {
+                MessageBox.Show("Invalid admin credentials.");
+            }
+        }
+
+        private void changeGrid(Grid newgrid)
+        {
+            try
+            {
+                if (currentGrid != null)
                 {
-                    cmd.Parameters.AddWithValue("@u", username);
-                    cmd.Parameters.AddWithValue("@p", hash);
+                    currentGrid.IsEnabled = false;
+                    currentGrid.Visibility = Visibility.Collapsed;
 
-                    int count = (int)cmd.ExecuteScalar();
+                    newgrid.IsEnabled = true;
+                    newgrid.Visibility = Visibility.Visible;
 
-                    if (count > 0)
-                    {
-                        MessageBox.Show("Admin login successful! 👑");
-                        // TODO: Open admin dashboard
-                    }
-                    else
-                    {
-                        MessageBox.Show("Invalid admin credentials.");
-                    }
+                    currentGrid = newgrid;
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"failed to change grid, {ex}");
+            }
+        }
+
+        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        {
+            changeGrid(LoginScreen);
+        }
+
+        private void AdminLoginButton_Click_1(object sender, RoutedEventArgs e)
+        {
+            changeGrid(AdminScreen);
+        }
+
+        private void AdminLogoutButton_Click_1(object sender, RoutedEventArgs e)
+        {
+            changeGrid(LoginScreen);
+        }
+
+        private void ContinueGameButton_Click(object sender, RoutedEventArgs e)
+        {
+            // play agian
+        }
+
+        private void ViewScoreboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            changeGrid(ScoreboardScreen);
+        }
+
+        private void BackToMenuButton_Click(object sender, RoutedEventArgs e)
+        {
+            changeGrid(GameBoardScreen);
+        }
+
+        private void BackToGameButton_Click(object sender, RoutedEventArgs e)
+        {
+            changeGrid(GameBoardScreen);
+        }
+
+        private void SkipQuestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            // skip question
+        }
+
+        private void QuitQuizButton_Click(object sender, RoutedEventArgs e)
+        {
+            changeGrid(GameBoardScreen);
+        }
+
+        private void ScoreboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            changeGrid(ScoreboardScreen);
         }
     }
 }
