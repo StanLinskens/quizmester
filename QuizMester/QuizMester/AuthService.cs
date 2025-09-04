@@ -8,6 +8,8 @@ namespace QuizMester
     {
         private readonly string connectionString =
             @"Data Source=localhost\sqlexpress;Initial Catalog=QuizmesterDatabase;Integrated Security=True;Encrypt=True;TrustServerCertificate=True";
+        
+        private string? loggedInUser = null;
 
         // 🔐 Hash passwords with SHA256
         private string HashPassword(string password)
@@ -22,7 +24,7 @@ namespace QuizMester
             }
         }
 
-        // 🟢 User login
+        // 🟢 User logins
         public bool Login(string username, string password, bool isAdmin = false)
         {
             string hash = HashPassword(password);
@@ -39,9 +41,19 @@ namespace QuizMester
                     cmd.Parameters.AddWithValue("@a", isAdmin ? 1 : 0);
 
                     int count = (int)cmd.ExecuteScalar();
-                    return count > 0;
+                    if (count > 0)
+                    {
+                        loggedInUser = username; // ✅ Store current user
+                        return true;
+                    }
+                    return false;
                 }
             }
+        }
+
+        public void Logout()
+        {
+            loggedInUser = null; // ✅ Clear session
         }
 
         // 🆕 Register
@@ -74,6 +86,33 @@ namespace QuizMester
             }
 
             return true;
+        }
+
+        // 🔎 Get user id by username (or current logged-in user)
+        public int? GetUserId(string? username = null)
+        {
+            if (username == null)
+                username = loggedInUser;
+
+            if (string.IsNullOrEmpty(username))
+                return null; // No user logged in
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = "SELECT UserId FROM Users WHERE Username=@u";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@u", username);
+                    object result = cmd.ExecuteScalar();
+
+                    if (result != null && result != DBNull.Value)
+                        return Convert.ToInt32(result);
+
+                    return null;
+                }
+            }
         }
     }
 }

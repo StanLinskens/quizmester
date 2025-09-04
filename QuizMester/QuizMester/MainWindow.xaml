@@ -563,10 +563,10 @@
                                   FontSize="16">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Rank" Binding="{Binding Rank}" Width="80"/>
-                                <DataGridTextColumn Header="Player" Binding="{Binding PlayerName}" Width="*"/>
+                                <DataGridTextColumn Header="Player" Binding="{Binding PlayerName}" Width="200"/>
                                 <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="120"/>
-                                <DataGridTextColumn Header="Completed" Binding="{Binding CompletedCategories}" Width="120"/>
-                                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="120"/>
+                                <DataGridTextColumn Header="Completed" Binding="{Binding CompletedCategories}" Width="140"/>
+                                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="*"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </StackPanel>

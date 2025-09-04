@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.Design;
+﻿using Microsoft.Data.SqlClient;
+using System.ComponentModel.Design;
+using System.Security;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,7 +26,9 @@ namespace QuizMester
         private TimeSpan _quizTimeLeft;
         private const int QUESTIONS_PER_GAME = 10;
         private const int QUIZ_TOTAL_SECONDS = 5 * 60; // 5:00 as in XAML default
-        private readonly int _currentUserId = 1; // <- replace with real user id
+        int? _currentUserId = 1; // <- replace with real user id
+
+        string connectionString = @"Data Source=localhost\sqlexpress;Initial Catalog=QuizmesterDatabase;Integrated Security=True;Encrypt=True;TrustServerCertificate=True";
 
         public MainWindow()
         {
@@ -37,7 +41,6 @@ namespace QuizMester
             AdminLoginButton.Click += AdminLoginButton_Click;
 
             // TODO: replace with your real connection string
-            var connectionString = @"Data Source=localhost\sqlexpress;Initial Catalog=QuizmesterDatabase;Integrated Security=True;Encrypt=True;TrustServerCertificate=True";
             _gameManager = new GameManager(connectionString);
 
             // Timer intervals
@@ -55,6 +58,8 @@ namespace QuizMester
 
             SkipQuestionButton.Click += SkipQuestionButton_Click;
             QuitQuizButton.Click += QuitQuizButton_Click;
+
+            LoadScoreboard();
         }
 
         // 🟢 Login
@@ -71,7 +76,8 @@ namespace QuizMester
 
             if (authService.Login(username, password, false))
             {
-                MessageBox.Show("Login successful! 🎉");
+                _currentUserId = authService.GetUserId(username);
+                MessageBox.Show($"{username}Login successful! 🎉");
                 changeGrid(GameBoardScreen);
             }
             else
@@ -124,6 +130,7 @@ namespace QuizMester
             if (authService.Login(username, password, true))
             {
                 MessageBox.Show("Admin login successful! 👑");
+                _currentUserId = authService.GetUserId(username);
                 // TODO: Open admin dashboard
             }
             else
@@ -155,16 +162,18 @@ namespace QuizMester
 
         private void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
+            authService.Logout();
             changeGrid(LoginScreen);
         }
 
         private void AdminLoginButton_Click_1(object sender, RoutedEventArgs e)
         {
             changeGrid(AdminScreen);
-        }
+        } 
 
         private void AdminLogoutButton_Click_1(object sender, RoutedEventArgs e)
         {
+            authService.Logout();
             changeGrid(LoginScreen);
         }
 
@@ -190,6 +199,7 @@ namespace QuizMester
 
         private void ScoreboardButton_Click(object sender, RoutedEventArgs e)
         {
+            LoadScoreboard();
             changeGrid(ScoreboardScreen);
         }
 
@@ -209,8 +219,7 @@ namespace QuizMester
                 // UI: show quiz screen, hide categories (adjust according to your layout)
                 QuizScreen.Visibility = Visibility.Visible;
                 // If you have a CategoryBoard grid, hide it here (example: CategoryBoardGrid.Visibility = Collapsed;)
-
-                _session = await _gameManager.CreateGameSessionAsync(_currentUserId, categoryName, QUESTIONS_PER_GAME);
+                _session = await _gameManager.CreateGameSessionAsync(_currentUserId.Value, categoryName, QUESTIONS_PER_GAME);
 
                 _currentQuestionIndex = 0;
                 _score = 0;
@@ -254,12 +263,17 @@ namespace QuizMester
 
             // Put answers into the 4 buttons (if less than 4, disable unused)
             var buttons = new[] { AnswerA, AnswerB, AnswerC, AnswerD };
+
+            // Shuffle answers first
+            var rnd = new Random();
+            var shuffledAnswers = q.Answers.OrderBy(a => rnd.Next()).ToList();
+
             for (int i = 0; i < buttons.Length; i++)
             {
-                if (i < q.Answers.Count)
+                if (i < shuffledAnswers.Count)
                 {
-                    buttons[i].Content = $"{(char)('A' + i)}) {q.Answers[i].AnswerText}";
-                    buttons[i].Tag = q.Answers[i]; // store AnswerDto
+                    buttons[i].Content = $"{(char)('A' + i)}) {shuffledAnswers[i].AnswerText}";
+                    buttons[i].Tag = shuffledAnswers[i]; // store AnswerDto
                     buttons[i].IsEnabled = true;
                     buttons[i].Visibility = Visibility.Visible;
                     buttons[i].BorderBrush = System.Windows.Media.Brushes.LightGray; // reset border
@@ -273,6 +287,7 @@ namespace QuizMester
                     buttons[i].Visibility = Visibility.Collapsed;
                 }
             }
+
 
             // Question timer starts from question's TimeLimitSeconds
             _questionSecondsLeft = q.TimeLimitSeconds > 0 ? q.TimeLimitSeconds : 30;
@@ -482,6 +497,39 @@ namespace QuizMester
         private void UpdateQuizTimerText()
         {
             QuizTimerText.Text = $"{_quizTimeLeft.Minutes}:{_quizTimeLeft.Seconds:D2}";
+        }
+
+        private void LoadScoreboard()
+        {
+            var entries = new List<ScoreboardEntry>();
+
+            using (var conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string query = "SELECT Username, FinalScore, EndTime FROM dbo.Scoreboard";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    int rank = 1;
+                    while (reader.Read())
+                    {
+                        entries.Add(new ScoreboardEntry
+                        {
+                            Rank = rank++,
+                            PlayerName = reader["Username"].ToString(),
+                            Score = Convert.ToInt32(reader["FinalScore"]),
+                            Date = reader["EndTime"] != DBNull.Value
+           ? Convert.ToDateTime(reader["EndTime"])
+           : (DateTime?)null
+
+                        });
+                    }
+                }
+            }
+
+            ScoreboardDataGrid.ItemsSource = entries;
         }
     }
 }
