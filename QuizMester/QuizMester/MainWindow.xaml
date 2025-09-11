@@ -822,6 +822,7 @@
                                        Style="{StaticResource SubHeaderText}" 
                                        HorizontalAlignment="Left" Margin="0,10,0,20"/>
 
+
                             <DataGrid Grid.Row="1" x:Name="UsersDataGrid" 
                                       AutoGenerateColumns="False" 
                                       CanUserAddRows="False"
@@ -830,17 +831,17 @@
                                       Background="White"
                                       AlternatingRowBackground="#F9FAFB">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="200"/>
-                                    <DataGridTextColumn Header="Total Score" Binding="{Binding TotalScore}" Width="120"/>
-                                    <DataGridTextColumn Header="Games Played" Binding="{Binding GamesPlayed}" Width="120"/>
-                                    <DataGridTextColumn Header="Last Login" Binding="{Binding LastLogin}" Width="150"/>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding UserId}" Width="60"/>
+                                    <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="150"/>
+                                    <DataGridCheckBoxColumn Header="Is Admin" Binding="{Binding IsAdmin}" Width="100"/>
+                                    <DataGridTextColumn Header="Created At" Binding="{Binding CreatedAt}" Width="150"/>
                                     <DataGridTemplateColumn Header="Actions" Width="200">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
                                                     <Button Content="Edit" Margin="2" Padding="5"/>
-                                                    <Button Content="Delete" Margin="2" Padding="5" 
-                                                            Background="{StaticResource ErrorRed}"/>
+                                                    <Button Content="Delete" Margin="2" Padding="5" Background="{StaticResource ErrorRed}" Tag="{Binding UserId}" 
+                                                       Click="DeleteUser_Click"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -849,11 +850,12 @@
                             </DataGrid>
 
                             <Button Grid.Row="2" x:Name="AddUserButton" 
-                                    Content="Add New User" 
+                                    Content="Add New User"
                                     Style="{StaticResource ModernButton}" 
                                     HorizontalAlignment="Left" 
                                     VerticalAlignment="Center" 
-                                    Margin="0,10"/>
+                                    Margin="0,10"
+                                    Click="AddUserButton_Click"/>
                         </Grid>
                     </TabItem>
 
@@ -873,7 +875,8 @@
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,20">
                                 <TextBlock Text="Filter by Category:" 
                                            VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox x:Name="CategoryFilterComboBox" Width="150" Height="30">
+                                <ComboBox x:Name="CategoryFilterComboBox" Width="150" Height="30" 
+                                         SelectionChanged="CategoryFilterComboBox_SelectionChanged">
                                     <ComboBoxItem Content="All Categories"/>
                                     <ComboBoxItem Content="Science"/>
                                     <ComboBoxItem Content="History"/>
@@ -882,6 +885,7 @@
                                     <ComboBoxItem Content="Geography"/>
                                     <ComboBoxItem Content="Literature"/>
                                 </ComboBox>
+
                             </StackPanel>
 
                             <DataGrid Grid.Row="2" x:Name="QuestionsDataGrid" 
@@ -895,14 +899,17 @@
                                     <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
                                     <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="120"/>
                                     <DataGridTextColumn Header="Question" Binding="{Binding QuestionText}" Width="300"/>
-                                    <DataGridTextColumn Header="Difficulty" Binding="{Binding Difficulty}" Width="80"/>
+                                    <DataGridTextColumn Header="Time Limit" Binding="{Binding TimeLimitSeconds}" Width="100"/>
                                     <DataGridTemplateColumn Header="Actions" Width="200">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
                                                     <Button Content="Edit" Margin="2" Padding="5"/>
-                                                    <Button Content="Delete" Margin="2" Padding="5" 
-                                                            Background="{StaticResource ErrorRed}"/>
+                                                    <Button Content="Delete"
+                                                        Margin="2" Padding="5"
+                                                        Background="{StaticResource ErrorRed}"
+                                                        Tag="{Binding Id}"
+                                                        Click="DeleteQuestion_Click"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -914,8 +921,9 @@
                                     Content="Add New Question" 
                                     Style="{StaticResource ModernButton}" 
                                     HorizontalAlignment="Left" 
-                                    VerticalAlignment="Center" 
-                                    Margin="0,10"/>
+                                    VerticalAlignment="Center"
+                                    Margin="0,10"
+                                    Click="AddQuestionButton_Click"/>
                         </Grid>
                     </TabItem>
                 </TabControl>

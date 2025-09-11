@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.ComponentModel.Design;
+using System.Data;
 using System.Security;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,6 +61,160 @@ namespace QuizMester
             QuitQuizButton.Click += QuitQuizButton_Click;
 
             LoadScoreboard();
+
+            // Load initial data
+            LoadUsers();
+            LoadQuestions();
+        }
+
+        //admin
+        private void LoadUsers()
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = "SELECT UserId, Username, IsAdmin, CreatedAt FROM Users";
+                SqlDataAdapter da = new SqlDataAdapter(query, conn);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                UsersDataGrid.ItemsSource = dt.DefaultView;
+            }
+        }
+
+        private void DeleteUser_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is int userId)
+            {
+                if (MessageBox.Show($"Delete user with ID {userId}?", "Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    DeleteUser(userId);
+                }
+            }
+        }
+
+        private void DeleteUser(int userId)
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                // Step 1: Delete GameQuestions tied to the user’s games
+                string deleteGameQuestions = @"
+            DELETE gq
+            FROM GameQuestions gq
+            INNER JOIN Games g ON gq.GameId = g.GameId
+            WHERE g.UserId = @UserId";
+                using (SqlCommand cmd = new SqlCommand(deleteGameQuestions, conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Step 2: Delete Games for this user
+                string deleteGames = "DELETE FROM Games WHERE UserId = @UserId";
+                using (SqlCommand cmd = new SqlCommand(deleteGames, conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Step 3: Delete the user
+                string deleteUser = "DELETE FROM Users WHERE UserId = @UserId";
+                using (SqlCommand cmd = new SqlCommand(deleteUser, conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            LoadUsers();
+        }
+
+
+        private void AddUserButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("TODO: Open Add User dialog here where you set Username, Password, and IsAdmin.");
+        }
+
+        private void LoadQuestions(string category = null)
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = @"
+            SELECT q.QuestionId AS Id, 
+                   c.Name AS Category, 
+                   q.QuestionText, 
+                   q.TimeLimitSeconds
+            FROM Questions q
+            INNER JOIN Categories c ON q.CategoryId = c.CategoryId";
+
+                if (!string.IsNullOrEmpty(category) && category != "All Categories")
+                {
+                    query += " WHERE c.Name = @Category";
+                }
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+                if (!string.IsNullOrEmpty(category) && category != "All Categories")
+                    cmd.Parameters.AddWithValue("@Category", category);
+
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
+                QuestionsDataGrid.ItemsSource = dt.DefaultView;
+            }
+        }
+
+        private void DeleteQuestion(int questionId)
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                // Step 1: Remove game references
+                string deleteGameQuestions = "DELETE FROM GameQuestions WHERE QuestionId = @Id";
+                SqlCommand cmd1 = new SqlCommand(deleteGameQuestions, conn);
+                cmd1.Parameters.AddWithValue("@Id", questionId);
+                cmd1.ExecuteNonQuery();
+
+                // Step 2: Remove answers
+                string deleteAnswers = "DELETE FROM Answers WHERE QuestionId = @Id";
+                SqlCommand cmd2 = new SqlCommand(deleteAnswers, conn);
+                cmd2.Parameters.AddWithValue("@Id", questionId);
+                cmd2.ExecuteNonQuery();
+
+                // Step 3: Remove question
+                string deleteQuestion = "DELETE FROM Questions WHERE QuestionId = @Id";
+                SqlCommand cmd3 = new SqlCommand(deleteQuestion, conn);
+                cmd3.Parameters.AddWithValue("@Id", questionId);
+                cmd3.ExecuteNonQuery();
+            }
+
+            LoadQuestions();
+        }
+
+        private void DeleteQuestion_Click(object sender, RoutedEventArgs e)
+        {
+            var row = (sender as Button).DataContext as DataRowView;
+            int questionId = Convert.ToInt32(row["Id"]);
+
+            if (MessageBox.Show($"Delete question {questionId}?", "Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                DeleteQuestion(questionId);
+            }
+        }
+
+
+        private void AddQuestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("TODO: Open Add Question dialog here.");
+        }
+
+        private void CategoryFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CategoryFilterComboBox.SelectedItem is ComboBoxItem selected)
+            {
+                string category = selected.Content.ToString();
+                LoadQuestions(category);
+            }
         }
 
         // 🟢 Login
