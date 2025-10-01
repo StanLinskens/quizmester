@@ -28,6 +28,7 @@ namespace QuizMester
         private const int QUESTIONS_PER_GAME = 10;
         private const int QUIZ_TOTAL_SECONDS = 5 * 60; // 5:00 as in XAML default
         int? _currentUserId = 1; // <- replace with real user id
+        private int? _editingQuestionId = null;
 
         string connectionString = @"Data Source=localhost\sqlexpress;Initial Catalog=QuizmesterDatabase;Integrated Security=True;Encrypt=True;TrustServerCertificate=True";
 
@@ -99,10 +100,10 @@ namespace QuizMester
 
                 // Step 1: Delete GameQuestions tied to the user’s games
                 string deleteGameQuestions = @"
-            DELETE gq
-            FROM GameQuestions gq
-            INNER JOIN Games g ON gq.GameId = g.GameId
-            WHERE g.UserId = @UserId";
+                    DELETE gq
+                    FROM GameQuestions gq
+                    INNER JOIN Games g ON gq.GameId = g.GameId
+                    WHERE g.UserId = @UserId";
                 using (SqlCommand cmd = new SqlCommand(deleteGameQuestions, conn))
                 {
                     cmd.Parameters.AddWithValue("@UserId", userId);
@@ -129,23 +130,17 @@ namespace QuizMester
             LoadUsers();
         }
 
-
-        private void AddUserButton_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("TODO: Open Add User dialog here where you set Username, Password, and IsAdmin.");
-        }
-
         private void LoadQuestions(string category = null)
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 string query = @"
-            SELECT q.QuestionId AS Id, 
-                   c.Name AS Category, 
-                   q.QuestionText, 
-                   q.TimeLimitSeconds
-            FROM Questions q
-            INNER JOIN Categories c ON q.CategoryId = c.CategoryId";
+                    SELECT q.QuestionId AS Id, 
+                           c.Name AS Category, 
+                           q.QuestionText, 
+                           q.TimeLimitSeconds
+                    FROM Questions q
+                    INNER JOIN Categories c ON q.CategoryId = c.CategoryId";
 
                 if (!string.IsNullOrEmpty(category) && category != "All Categories")
                 {
@@ -202,10 +197,111 @@ namespace QuizMester
             }
         }
 
-
         private void AddQuestionButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("TODO: Open Add Question dialog here.");
+            QuestionDialogTitle.Text = "Add New Question";
+            _editingQuestionId = null; // Null means new
+
+            // Clear fields
+            QuestionCategoryComboBox.SelectedIndex = -1;
+            QuestionDifficultyComboBox.SelectedIndex = -1;
+            QuestionTextBox.Text = "";
+            AnswerATextBox.Text = "";
+            AnswerBTextBox.Text = "";
+            AnswerCTextBox.Text = "";
+            AnswerDTextBox.Text = "";
+
+            QuestionDialogOverlay.Visibility = Visibility.Visible;
+        }
+
+        private void EditQuestion_Click(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            int questionId = Convert.ToInt32(button.Tag);
+
+            string query = "SELECT * FROM Questions WHERE Id=@Id";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@Id", questionId);
+                conn.Open();
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        _editingQuestionId = questionId;
+                        QuestionDialogTitle.Text = "Edit Question";
+
+                        QuestionCategoryComboBox.SelectedItem = QuestionCategoryComboBox.Items.Cast<ComboBoxItem>()
+                            .FirstOrDefault(i => i.Content.ToString() == reader["Category"].ToString());
+
+                        QuestionDifficultyComboBox.SelectedItem = QuestionDifficultyComboBox.Items.Cast<ComboBoxItem>()
+                            .FirstOrDefault(i => i.Content.ToString() == reader["Difficulty"].ToString());
+
+                        QuestionTextBox.Text = reader["QuestionText"].ToString();
+                        AnswerATextBox.Text = reader["AnswerA"].ToString();
+                        AnswerBTextBox.Text = reader["AnswerB"].ToString();
+                        AnswerCTextBox.Text = reader["AnswerC"].ToString();
+                        AnswerDTextBox.Text = reader["AnswerD"].ToString();
+
+                        QuestionDialogOverlay.Visibility = Visibility.Visible;
+                    }
+                }
+            }
+        }
+
+        private void SaveQuestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            string category = (QuestionCategoryComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+            string difficulty = (QuestionDifficultyComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+            string question = QuestionTextBox.Text;
+            string answerA = AnswerATextBox.Text;
+            string answerB = AnswerBTextBox.Text;
+            string answerC = AnswerCTextBox.Text;
+            string answerD = AnswerDTextBox.Text;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                if (_editingQuestionId == null)
+                {
+                    // INSERT
+                    cmd.CommandText = @"INSERT INTO Questions (Category, Difficulty, QuestionText, AnswerA, AnswerB, AnswerC, AnswerD)
+                                VALUES (@Category, @Difficulty, @QuestionText, @AnswerA, @AnswerB, @AnswerC, @AnswerD)";
+                }
+                else
+                {
+                    // UPDATE
+                    cmd.CommandText = @"UPDATE Questions 
+                                SET Category=@Category, Difficulty=@Difficulty, QuestionText=@QuestionText,
+                                    AnswerA=@AnswerA, AnswerB=@AnswerB, AnswerC=@AnswerC, AnswerD=@AnswerD
+                                WHERE Id=@Id";
+                    cmd.Parameters.AddWithValue("@Id", _editingQuestionId);
+                }
+
+                cmd.Parameters.AddWithValue("@Category", category ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@Difficulty", difficulty ?? (object)DBNull.Value);
+                cmd.Parameters.AddWithValue("@QuestionText", question);
+                cmd.Parameters.AddWithValue("@AnswerA", answerA);
+                cmd.Parameters.AddWithValue("@AnswerB", answerB);
+                cmd.Parameters.AddWithValue("@AnswerC", answerC);
+                cmd.Parameters.AddWithValue("@AnswerD", answerD);
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            _editingQuestionId = null; // reset
+            QuestionDialogOverlay.Visibility = Visibility.Collapsed;
+            LoadQuestions(); // refresh DataGrid
+        }
+
+        private void CancelQuestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            QuestionDialogOverlay.Visibility = Visibility.Collapsed;
+            _editingQuestionId = null;
         }
 
         private void CategoryFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -676,8 +772,8 @@ namespace QuizMester
                             PlayerName = reader["Username"].ToString(),
                             Score = Convert.ToInt32(reader["FinalScore"]),
                             Date = reader["EndTime"] != DBNull.Value
-           ? Convert.ToDateTime(reader["EndTime"])
-           : (DateTime?)null
+                               ? Convert.ToDateTime(reader["EndTime"])
+                               : (DateTime?)null
 
                         });
                     }

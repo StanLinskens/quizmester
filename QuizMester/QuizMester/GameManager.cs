@@ -88,10 +88,10 @@ namespace QuizMester
             // Note: TOP @count with parameterization for SQL Server requires building SQL (can't parameterize TOP in older servers).
             // We'll use TOP (@count) as a workaround with sp_executesql, but simpler: fetch a bit more and take 'count' in memory.
             const string sql = @"
-SELECT q.QuestionId, q.CategoryId, q.QuestionText, q.TimeLimitSeconds
-FROM Questions q
-WHERE q.CategoryId = @CategoryId
-ORDER BY NEWID()"; // RANDOM order
+                SELECT q.QuestionId, q.CategoryId, q.QuestionText, q.TimeLimitSeconds
+                FROM Questions q
+                WHERE q.CategoryId = @CategoryId
+                ORDER BY NEWID()"; // RANDOM order
 
             var list = new List<QuestionDto>();
             await using (var conn = new SqlConnection(_connectionString))
@@ -123,10 +123,10 @@ ORDER BY NEWID()"; // RANDOM order
                 {
                     var ids = string.Join(",", list.ConvertAll(q => q.QuestionId));
                     var answersSql = $@"
-SELECT AnswerId, QuestionId, AnswerText, IsCorrect
-FROM Answers
-WHERE QuestionId IN ({ids})
-ORDER BY AnswerId"; // preserve stable order
+                        SELECT AnswerId, QuestionId, AnswerText, IsCorrect
+                        FROM Answers
+                        WHERE QuestionId IN ({ids})
+                        ORDER BY AnswerId"; // preserve stable order
                     await using var cmd2 = new SqlCommand(answersSql, conn);
                     await using var reader2 = await cmd2.ExecuteReaderAsync();
                     var answerGroups = new Dictionary<int, List<AnswerDto>>();
@@ -157,8 +157,8 @@ ORDER BY AnswerId"; // preserve stable order
         public async Task RecordGameQuestionAsync(int gameId, int questionId, int? userAnswerId, bool? isCorrect, DateTime? answeredAt)
         {
             const string sql = @"
-INSERT INTO GameQuestions (GameId, QuestionId, UserAnswerId, IsCorrect, AnsweredAt)
-VALUES (@GameId, @QuestionId, @UserAnswerId, @IsCorrect, @AnsweredAt)";
+                INSERT INTO GameQuestions (GameId, QuestionId, UserAnswerId, IsCorrect, AnsweredAt)
+                VALUES (@GameId, @QuestionId, @UserAnswerId, @IsCorrect, @AnsweredAt)";
             await using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
             await using var cmd = new SqlCommand(sql, conn);
