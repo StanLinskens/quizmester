@@ -211,7 +211,8 @@ namespace QuizMester
             AnswerCTextBox.Text = "";
             AnswerDTextBox.Text = "";
 
-            QuestionDialogOverlay.Visibility = Visibility.Visible;
+            // Use changeGrid to show the overlay so navigation stays consistent
+            changeGrid(QuestionDialogOverlay);
         }
 
         private void EditQuestion_Click(object sender, RoutedEventArgs e)
@@ -246,7 +247,8 @@ namespace QuizMester
                         AnswerCTextBox.Text = reader["AnswerC"].ToString();
                         AnswerDTextBox.Text = reader["AnswerD"].ToString();
 
-                        QuestionDialogOverlay.Visibility = Visibility.Visible;
+                            // Open the question dialog using the centralized grid switch
+                            changeGrid(QuestionDialogOverlay);
                     }
                 }
             }
@@ -293,15 +295,18 @@ namespace QuizMester
                 cmd.ExecuteNonQuery();
             }
 
-            _editingQuestionId = null; // reset
-            QuestionDialogOverlay.Visibility = Visibility.Collapsed;
-            LoadQuestions(); // refresh DataGrid
+                _editingQuestionId = null; // reset
+                LoadQuestions(); // refresh DataGrid
+
+                // Return to the admin screen after saving
+                changeGrid(AdminScreen);
         }
 
         private void CancelQuestionButton_Click(object sender, RoutedEventArgs e)
         {
-            QuestionDialogOverlay.Visibility = Visibility.Collapsed;
+            // Close editor and return to admin screen
             _editingQuestionId = null;
+            changeGrid(AdminScreen);
         }
 
         private void CategoryFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

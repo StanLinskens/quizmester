@@ -896,7 +896,7 @@
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <Button Content="Edit" Margin="2" Padding="5"/>
+                                                    <Button Content="Edit" Margin="2" Padding="5" Tag="{Binding Id}" Click="EditQuestion_Click"/>
                                                     <Button Content="Delete"
                                                         Margin="2" Padding="5"
                                                         Background="{StaticResource ErrorRed}"
