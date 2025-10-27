@@ -7,6 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Diagnostics;
+using System.Media;
 
 namespace QuizMester
 {
@@ -29,6 +31,15 @@ namespace QuizMester
         private const int QUIZ_TOTAL_SECONDS = 5 * 60; // 5:00 as in XAML default
         int? _currentUserId = 1; // <- replace with real user id
         private int? _editingQuestionId = null;
+
+        // New fields for features:
+        private bool _fiftyFiftyUsed = false;
+        private int? _specialQuestionIndex = null;
+        private bool _isCurrentSpecialQuestion = false;
+        private bool _specialQuizMode = false;
+        private int _specialQuizCorrectCount = 0;
+        private Stopwatch _specialQuizStopwatch;
+        private int _specialQuizPenaltySeconds = 0; // added for wrong-answer penalty in special mode
 
         string connectionString = @"Data Source=localhost\sqlexpress;Initial Catalog=QuizmesterDatabase;Integrated Security=True;Encrypt=True;TrustServerCertificate=True";
 
@@ -64,11 +75,23 @@ namespace QuizMester
             SaveQuestionButton.Click += SaveQuestionButton_Click;
             CancelQuestionButton.Click += CancelQuestionButton_Click;
 
+            // New handlers
+            FiftyFiftyButton.Click += FiftyFiftyButton_Click;
+            SpecialModeToggle.Checked += (s,e) => SpecialModeToggleChanged(true);
+            SpecialModeToggle.Unchecked += (s,e) => SpecialModeToggleChanged(false);
+
             LoadScoreboard();
 
             // Load initial data
             LoadUsers();
             LoadQuestions();
+        }
+
+        private void SpecialModeToggleChanged(bool isOn)
+        {
+            // update UI/tooltip as feedback (toggle only affects next game)
+            _specialQuizMode = isOn;
+            SpecialModeToggle.Content = isOn ? "Special Quiz Mode ✓" : "Special Quiz Mode";
         }
 
         //admin
@@ -207,11 +230,17 @@ namespace QuizMester
 
             // Clear fields
             QuestionCategoryComboBox.SelectedIndex = -1;
+            QuestionDifficultyComboBox.SelectedIndex = -1;
             QuestionTextBox.Text = "";
             AnswerATextBox.Text = "";
             AnswerBTextBox.Text = "";
             AnswerCTextBox.Text = "";
             AnswerDTextBox.Text = "";
+
+            // reset fifty/ special flags
+            _fiftyFiftyUsed = false;
+            _specialQuestionIndex = null;
+            _isCurrentSpecialQuestion = false;
 
             // Use changeGrid to show the overlay so navigation stays consistent
             changeGrid(QuestionDialogOverlay);
@@ -219,6 +248,7 @@ namespace QuizMester
 
         private void EditQuestion_Click(object sender, RoutedEventArgs e)
         {
+            // existing edit implementation (unchanged from previous working version)
             var button = (Button)sender;
             int questionId = Convert.ToInt32(button.Tag);
 
@@ -659,19 +689,52 @@ namespace QuizMester
         {
             if (sender is Ellipse clickedWedge && clickedWedge.Tag is string category)
             {
-                StartGame(category);
+                bool startSpecialMode = SpecialModeToggle.IsChecked == true;
+                StartGame(category, startSpecialMode);
                 changeGrid(QuizScreen);
             }
         }
 
-        public async void StartGame(string categoryName)
+        public async void StartGame(string categoryName, bool specialMode = false)
         {
             try
             {
-                // UI: show quiz screen, hide categories (adjust according to your layout)
                 QuizScreen.Visibility = Visibility.Visible;
-                // If you have a CategoryBoard grid, hide it here (example: CategoryBoardGrid.Visibility = Collapsed;)
-                _session = await _gameManager.CreateGameSessionAsync(_currentUserId.Value, categoryName, QUESTIONS_PER_GAME);
+
+                _specialQuizMode = specialMode;
+                _fiftyFiftyUsed = false;
+                _specialQuestionIndex = null;
+                _isCurrentSpecialQuestion = false;
+                _specialQuizCorrectCount = 0;
+                _specialQuizPenaltySeconds = 0;
+
+                if (_specialQuizMode)
+                {
+                    // Special quiz: random questions across all categories
+                    _session = await _gameManager.CreateSpecialGameSessionAsync(_currentUserId.Value, QUESTIONS_PER_GAME);
+                    // stopwatch for total time
+                    _specialQuizStopwatch = new Stopwatch();
+                    _specialQuizStopwatch.Start();
+                    // start quiz timer to update elapsed display
+                    _quizTimer.Start();
+                }
+                else
+                {
+                    _session = await _gameManager.CreateGameSessionAsync(_currentUserId.Value, categoryName, QUESTIONS_PER_GAME);
+
+                    // select special question randomly among first 20
+                    if (_session.Questions.Count > 0)
+                    {
+                        var maxIndex = Math.Min(20, _session.Questions.Count);
+                        var rnd = new Random();
+                        _specialQuestionIndex = rnd.Next(0, maxIndex);
+                    }
+
+                    // start the quiz timer (total) as before
+                    _quizTimeLeft = TimeSpan.FromSeconds(QUIZ_TOTAL_SECONDS);
+                    UpdateQuizTimerText();
+                    _quizTimer.Start();
+                }
 
                 _currentQuestionIndex = 0;
                 _score = 0;
@@ -682,12 +745,6 @@ namespace QuizMester
                 CategoryTitleText.Text = $"🔬 {categoryName.ToUpper()} QUIZ";
                 CurrentScoreText.Text = _score.ToString();
 
-                // start quiz timer
-                _quizTimeLeft = TimeSpan.FromSeconds(QUIZ_TOTAL_SECONDS);
-                UpdateQuizTimerText();
-                _quizTimer.Start();
-
-                // load first question
                 await LoadQuestionAsync(_currentQuestionIndex);
             }
             catch (Exception ex)
@@ -699,24 +756,27 @@ namespace QuizMester
 
         private async Task LoadQuestionAsync(int index)
         {
-            // guard
             if (_session == null || index < 0 || index >= _session.Questions.Count)
             {
                 await EndGameAsync();
                 return;
             }
-
+                    
             var q = _session.Questions[index];
 
-            // UI
+            // UI reset
             QuestionText.Text = q.QuestionText;
             QuestionProgressText.Text = $"Question {index + 1} of {_session.Questions.Count}";
             QuestionProgressBar.Value = ((index) / (double)_session.Questions.Count) * 100.0;
 
-            // Put answers into the 4 buttons (if less than 4, disable unused)
-            var buttons = new[] { AnswerA, AnswerB, AnswerC, AnswerD };
+            // Reset question border style
+            QuestionBorder.Background = System.Windows.Media.Brushes.White;
+            QuestionText.FontSize = 22;
+            QuestionText.FontWeight = FontWeights.SemiBold;
+            _isCurrentSpecialQuestion = false;
 
-            // Shuffle answers first
+            // put answers
+            var buttons = new[] { AnswerA, AnswerB, AnswerC, AnswerD };
             var rnd = new Random();
             var shuffledAnswers = q.Answers.OrderBy(a => rnd.Next()).ToList();
 
@@ -725,10 +785,10 @@ namespace QuizMester
                 if (i < shuffledAnswers.Count)
                 {
                     buttons[i].Content = $"{(char)('A' + i)}) {shuffledAnswers[i].AnswerText}";
-                    buttons[i].Tag = shuffledAnswers[i]; // store AnswerDto
+                    buttons[i].Tag = shuffledAnswers[i];
                     buttons[i].IsEnabled = true;
                     buttons[i].Visibility = Visibility.Visible;
-                    buttons[i].BorderBrush = System.Windows.Media.Brushes.LightGray; // reset border
+                    buttons[i].BorderBrush = System.Windows.Media.Brushes.LightGray;
                     buttons[i].Background = System.Windows.Media.Brushes.White;
                 }
                 else
@@ -740,14 +800,35 @@ namespace QuizMester
                 }
             }
 
+            // per-question timer only for normal mode
+            if (!_specialQuizMode)
+            {
+                _questionSecondsLeft = q.TimeLimitSeconds > 0 ? q.TimeLimitSeconds : 30;
+                UpdateQuestionTimerText();
+                _questionTimer.Start();
+            }
+            else
+            {
+                // no per-question timer in special quiz mode
+                QuestionTimerText.Text = "-";
+            }
 
-            // Question timer starts from question's TimeLimitSeconds
-            _questionSecondsLeft = q.TimeLimitSeconds > 0 ? q.TimeLimitSeconds : 30;
-            UpdateQuestionTimerText();
-            _questionTimer.Start();
+            // Special question decoration (only for normal mode)
+            if (!_specialQuizMode && _specialQuestionIndex.HasValue && index == _specialQuestionIndex.Value)
+            {
+                _isCurrentSpecialQuestion = true;
+                QuestionBorder.Background = System.Windows.Media.Brushes.LightGoldenrodYellow;
+                QuestionText.FontSize = 24;
+                QuestionText.FontWeight = FontWeights.Bold;
+                // play a short attention sound
+                try { SystemSounds.Asterisk.Play(); } catch { }
+            }
 
-            // clear feedback
+            // Reset joker availability for each question (only if you want 50/50 once per game; keep it per game)
+            // We leave _fiftyFiftyUsed as-is (single-use per game). To make it per-question, set to false here.
+
             FeedbackText.Text = "";
+            FiftyFiftyButton.IsEnabled = !_fiftyFiftyUsed;
         }
 
         private async void AnswerButton_Click(object sender, RoutedEventArgs e)
@@ -756,39 +837,83 @@ namespace QuizMester
             if (!(sender is Button btn)) return;
             if (!(btn.Tag is AnswerDto selectedAnswer)) return;
 
-            // Prevent double-click
             DisableAnswerButtons();
 
-            _questionTimer.Stop();
+            // stop per-question timer for normal mode
+            if (!_specialQuizMode)
+                _questionTimer.Stop();
 
             var q = _session.Questions[_currentQuestionIndex];
 
             var isCorrect = selectedAnswer.IsCorrect;
             if (isCorrect)
             {
-                _score += 10; // example scoring
-                FeedbackText.Text = "Correct! +10";
+                if (_specialQuizMode)
+                {
+                    _score += 10; // regular scoring in special mode (no bonus)
+                    _specialQuizCorrectCount++;
+                    FeedbackText.Text = $"Correct! +10 ({_specialQuizCorrectCount}/10)";
+                }
+                else
+                {
+                    // normal mode: award extra when special question
+                    int points = 10;
+                    if (_isCurrentSpecialQuestion)
+                    {
+                        points += 15; // extra bonus for special
+                        FeedbackText.Text = $"Special QUESTION! Correct! +{points}";
+                    }
+                    else
+                    {
+                        FeedbackText.Text = $"Correct! +{points}";
+                    }
+                    _score += points;
+                }
             }
             else
             {
-                FeedbackText.Text = $"Wrong! Correct answer: {GetCorrectAnswerText(q)}";
+                if (_specialQuizMode)
+                {
+                    // wrong answer in special mode => +5 seconds penalty
+                    _specialQuizPenaltySeconds += 5;
+                    FeedbackText.Text = "Wrong! +5s penalty";
+                }
+                else
+                {
+                    FeedbackText.Text = $"Wrong! Correct answer: {GetCorrectAnswerText(q)}";
+                }
             }
+
             CurrentScoreText.Text = _score.ToString();
 
-            // Visual feedback on selected button + correct button
+            // Show feedback visuals
             ShowAnswerFeedback(selectedAnswer.AnswerId, q);
 
-            // record GameQuestion
+            // record GameQuestion (note: special mode still records)
             await _gameManager.RecordGameQuestionAsync(_session.GameId, q.QuestionId, selectedAnswer.AnswerId, isCorrect, DateTime.UtcNow);
 
             // short pause then next
             await Task.Delay(900);
 
+            // reset fifty/ fifty button for next question if per-game; we keep it single-use per game (so don't reset)
+            // _fiftyFiftyUsed = false;
+
+            // check end condition for special quiz mode (10 correct answers)
+            if (_specialQuizMode)
+            {
+                if (_specialQuizCorrectCount >= 10)
+                {
+                    await EndGameAsync();
+                    changeGrid(GameBoardScreen);
+                    return;
+                }
+            }
+
             _currentQuestionIndex++;
             if (_currentQuestionIndex >= _session.Questions.Count)
             {
                 await EndGameAsync();
-                changeGrid(GameBoardScreen); // swap to score screen
+                changeGrid(GameBoardScreen);
             }
             else
             {
@@ -798,7 +923,6 @@ namespace QuizMester
 
         private void ShowAnswerFeedback(int selectedAnswerId, QuestionDto q)
         {
-            // color the correct answer gold and selected wrong (if wrong) red
             var buttons = new[] { AnswerA, AnswerB, AnswerC, AnswerD };
             foreach (var b in buttons)
             {
@@ -814,12 +938,6 @@ namespace QuizMester
             }
         }
 
-        private string GetCorrectAnswerText(QuestionDto q)
-        {
-            var correct = q.Answers.FirstOrDefault(a => a.IsCorrect);
-            return correct != null ? correct.AnswerText : "—";
-        }
-
         private void DisableAnswerButtons()
         {
             AnswerA.IsEnabled = AnswerB.IsEnabled = AnswerC.IsEnabled = AnswerD.IsEnabled = false;
@@ -833,6 +951,45 @@ namespace QuizMester
             if (AnswerD.Tag != null) AnswerD.IsEnabled = true;
         }
 
+        // 50/50 Joker implementation (single-use for the whole game)
+        private void FiftyFiftyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_fiftyFiftyUsed || _session == null) return;
+
+            var buttons = new[] { AnswerA, AnswerB, AnswerC, AnswerD };
+
+            // Identify correct button and incorrect ones
+            Button correctButton = null;
+            var incorrectButtons = new List<Button>();
+            foreach (var b in buttons)
+            {
+                if (!(b.Tag is AnswerDto a)) continue;
+                if (a.IsCorrect) correctButton = b;
+                else incorrectButtons.Add(b);
+            }
+
+            if (correctButton == null || incorrectButtons.Count == 0) return;
+
+            // pick one random incorrect to keep
+            var rnd = new Random();
+            var keepIncorrect = incorrectButtons[rnd.Next(incorrectButtons.Count)];
+                
+            // disable all except correctButton and keepIncorrect
+            foreach (var b in buttons)
+            {
+                if (b != correctButton && b != keepIncorrect)
+                {
+                    b.IsEnabled = false;
+                    b.Visibility = Visibility.Visible; // keep visible but disabled
+                    b.Opacity = 0.6;
+                }
+            }
+
+            _fiftyFiftyUsed = true;
+            FiftyFiftyButton.IsEnabled = false;
+            FeedbackText.Text = "50/50 used";
+        }
+
         private async void SkipQuestionButton_Click(object sender, RoutedEventArgs e)
         {
             if (!_skipAvailable) return;
@@ -840,16 +997,14 @@ namespace QuizMester
             SkipStatusText.Text = "(0 skips)";
             SkipQuestionButton.IsEnabled = false;
 
-            // stop question timer
-            _questionTimer.Stop();
+            if (!_specialQuizMode)
+                _questionTimer.Stop();
 
-            // record GameQuestion with no answer and IsCorrect = NULL
             var q = _session.Questions[_currentQuestionIndex];
             await _gameManager.RecordGameQuestionAsync(_session.GameId, q.QuestionId, null, null, DateTime.UtcNow);
 
             FeedbackText.Text = "Skipped question.";
 
-            // move to next after short pause
             await Task.Delay(600);
             _currentQuestionIndex++;
             if (_currentQuestionIndex >= _session.Questions.Count)
@@ -865,7 +1020,6 @@ namespace QuizMester
 
         private async void QuitQuizButton_Click(object sender, RoutedEventArgs e)
         {
-            // Optional: ask for confirmation
             var res = MessageBox.Show("Quit quiz? Progress will be saved.", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (res != MessageBoxResult.Yes) return;
             await EndGameAsync();
@@ -874,9 +1028,13 @@ namespace QuizMester
 
         private async Task EndGameAsync()
         {
-            // stop timers
+            // stop timers & stopwatch
             _questionTimer.Stop();
             _quizTimer.Stop();
+            if (_specialQuizStopwatch != null && _specialQuizStopwatch.IsRunning)
+            {
+                _specialQuizStopwatch.Stop();
+            }
 
             // finalize (save final score + endtime)
             if (_session != null)
@@ -884,15 +1042,31 @@ namespace QuizMester
                 await _gameManager.FinalizeGameAsync(_session.GameId, _score);
             }
 
-            // UI: show final summary
-            MessageBox.Show($"Game finished! Final score: {_score}", "Game Over", MessageBoxButton.OK, MessageBoxImage.Information);
+            // If the special mode was used, compute total time with penalties and show that
+            if (_specialQuizMode)
+            {
+                var elapsed = _specialQuizStopwatch?.Elapsed.TotalSeconds ?? 0;
+                var totalWithPenalty = TimeSpan.FromSeconds(elapsed + _specialQuizPenaltySeconds);
+                MessageBox.Show($"Special Quiz finished! Final score: {_score}\nTime (incl. penalties): {totalWithPenalty:mm\\:ss}", "Game Over", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // reset special mode state
+                _specialQuizMode = false;
+                SpecialModeToggle.IsChecked = false;
+                SpecialModeToggle.Content = "Special Quiz Mode";
+            }
+            else
+            {
+                MessageBox.Show($"Game finished! Final score: {_score}", "Game Over", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
 
             // Reset UI
             QuizScreen.Visibility = Visibility.Collapsed;
-            // If you hid the category board, show it again here.
 
             // cleanup session
             _session = null;
+            _fiftyFiftyUsed = false;
+            _specialQuestionIndex = null;
+            _isCurrentSpecialQuestion = false;
         }
 
         private void QuestionTimer_Tick(object sender, EventArgs e)
@@ -900,7 +1074,6 @@ namespace QuizMester
             _questionSecondsLeft--;
             if (_questionSecondsLeft <= 0)
             {
-                // time's up for this question
                 _questionTimer.Stop();
                 OnQuestionTimeExpired();
             }
@@ -914,10 +1087,8 @@ namespace QuizMester
 
             var q = _session.Questions[_currentQuestionIndex];
 
-            // record unanswered (NULL answer)
             await _gameManager.RecordGameQuestionAsync(_session.GameId, q.QuestionId, null, null, DateTime.UtcNow);
 
-            // show correct answer
             FeedbackText.Text = $"Time's up! Correct: {GetCorrectAnswerText(q)}";
 
             await Task.Delay(900);
@@ -931,14 +1102,24 @@ namespace QuizMester
 
         private void QuizTimer_Tick(object sender, EventArgs e)
         {
-            _quizTimeLeft = _quizTimeLeft.Add(TimeSpan.FromSeconds(-1));
-            if (_quizTimeLeft.TotalSeconds <= 0)
+            if (_specialQuizMode)
             {
-                _quizTimer.Stop();
-                // Quiz time finished -> end game
-                _ = Dispatcher.InvokeAsync(async () => await EndGameAsync());
+                // show elapsed + penalty
+                var elapsed = _specialQuizStopwatch?.Elapsed.TotalSeconds ?? 0;
+                var totalSeconds = elapsed + _specialQuizPenaltySeconds;
+                var t = TimeSpan.FromSeconds(totalSeconds);
+                QuizTimerText.Text = $"{t.Minutes}:{t.Seconds:D2}";
             }
-            UpdateQuizTimerText();
+            else
+            {
+                _quizTimeLeft = _quizTimeLeft.Add(TimeSpan.FromSeconds(-1));
+                if (_quizTimeLeft.TotalSeconds <= 0)
+                {
+                    _quizTimer.Stop();
+                    _ = Dispatcher.InvokeAsync(async () => await EndGameAsync());
+                }
+                UpdateQuizTimerText();
+            }
         }
 
         private void UpdateQuestionTimerText()
