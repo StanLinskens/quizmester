@@ -207,7 +207,6 @@ namespace QuizMester
 
             // Clear fields
             QuestionCategoryComboBox.SelectedIndex = -1;
-            QuestionDifficultyComboBox.SelectedIndex = -1;
             QuestionTextBox.Text = "";
             AnswerATextBox.Text = "";
             AnswerBTextBox.Text = "";
@@ -277,20 +276,6 @@ namespace QuizMester
                 else
                 {
                     QuestionCategoryComboBox.SelectedIndex = -1;
-                }
-
-                // difficulty
-                if (!string.IsNullOrEmpty(difficulty))
-                {
-                    QuestionDifficultyComboBox.SelectedItem = QuestionDifficultyComboBox.Items
-                        .Cast<ComboBoxItem>()
-                        .FirstOrDefault(i => i.Content.ToString() == difficulty);
-                    if (QuestionDifficultyComboBox.SelectedItem == null)
-                        QuestionDifficultyComboBox.SelectedIndex = -1;
-                }
-                else
-                {
-                    QuestionDifficultyComboBox.SelectedIndex = -1;
                 }
 
                 QuestionTextBox.Text = questionText;
