@@ -367,7 +367,7 @@
 
                         <!-- Special Quiz Mode toggle -->
                         <ToggleButton x:Name="SpecialModeToggle" Content="Special Quiz Mode" 
-                                      Style="{StaticResource ModernButton}" Margin="10,0"
+                                      Margin="10,0"
                                       Width="180" Height="36"/>
                     </StackPanel>
                 </Border>

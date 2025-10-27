@@ -94,6 +94,14 @@ namespace QuizMester
             SpecialModeToggle.Content = isOn ? "Special Quiz Mode ✓" : "Special Quiz Mode";
         }
 
+        // Add this method inside the MainWindow class in MainWindow.xaml.cs
+
+        private string GetCorrectAnswerText(QuestionDto question)
+        {
+            var correct = question.Answers?.FirstOrDefault(a => a.IsCorrect);
+            return correct != null ? correct.AnswerText : "(no correct answer)";
+        }
+
         //admin
         private void LoadUsers()
         {
@@ -230,7 +238,6 @@ namespace QuizMester
 
             // Clear fields
             QuestionCategoryComboBox.SelectedIndex = -1;
-            QuestionDifficultyComboBox.SelectedIndex = -1;
             QuestionTextBox.Text = "";
             AnswerATextBox.Text = "";
             AnswerBTextBox.Text = "";
@@ -780,6 +787,8 @@ namespace QuizMester
             var rnd = new Random();
             var shuffledAnswers = q.Answers.OrderBy(a => rnd.Next()).ToList();
 
+            EnableAnswerButtons();
+
             for (int i = 0; i < buttons.Length; i++)
             {
                 if (i < shuffledAnswers.Count)
@@ -945,10 +954,10 @@ namespace QuizMester
 
         private void EnableAnswerButtons()
         {
-            if (AnswerA.Tag != null) AnswerA.IsEnabled = true;
-            if (AnswerB.Tag != null) AnswerB.IsEnabled = true;
-            if (AnswerC.Tag != null) AnswerC.IsEnabled = true;
-            if (AnswerD.Tag != null) AnswerD.IsEnabled = true;
+            if (AnswerA.Tag != null) AnswerA.IsEnabled = true; AnswerA.Opacity = 1.0;
+            if (AnswerB.Tag != null) AnswerB.IsEnabled = true; AnswerB.Opacity = 1.0;
+            if (AnswerC.Tag != null) AnswerC.IsEnabled = true; AnswerC.Opacity = 1.0;
+            if (AnswerD.Tag != null) AnswerD.IsEnabled = true; AnswerD.Opacity = 1.0;
         }
 
         // 50/50 Joker implementation (single-use for the whole game)
