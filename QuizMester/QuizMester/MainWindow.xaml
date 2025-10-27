@@ -354,7 +354,7 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Bottom Controls -->
+                <!-- Bottom Controls: added SpecialModeToggle -->
                 <Border Grid.Row="2" Background="#F3F4F6" BorderThickness="0,1,0,0" 
                         BorderBrush="#D1D5DB">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" 
@@ -364,6 +364,11 @@
                                 Background="#6B7280" Click="LogoutButton_Click"/>
                         <Button x:Name="ProfileButton" Content="Profile" 
                                 Style="{StaticResource ModernButton}"/>
+
+                        <!-- Special Quiz Mode toggle -->
+                        <Button x:Name="SpecialModeToggle" Content="Special Quiz Mode" 
+                                      Style="{StaticResource ModernButton}" Margin="10,0"
+                                      Width="180" Height="36"/>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -428,7 +433,7 @@
                     </Grid.RowDefinitions>
 
                     <!-- Question Text -->
-                    <Border Grid.Row="0" Background="White" 
+                    <Border x:Name="QuestionBorder" Grid.Row="0" Background="White" 
                             CornerRadius="10" Padding="30" Margin="0,0,0,30">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
@@ -514,6 +519,10 @@
                         <StackPanel Grid.Column="2" Orientation="Horizontal" 
                                     HorizontalAlignment="Right" VerticalAlignment="Center" 
                                     Margin="0,0,40,0">
+                            <!-- 50/50 Joker button -->
+                            <Button x:Name="FiftyFiftyButton" Content="50/50" 
+                                    Style="{StaticResource ModernButton}" 
+                                    Background="#10B981" Margin="0,0,10,0" Click="FiftyFiftyButton_Click"/>
                             <Button x:Name="SkipQuestionButton" 
                                     Content="Skip Question" 
                                     Style="{StaticResource ModernButton}" 
@@ -1008,15 +1017,6 @@
                                         <ComboBoxItem Content="Entertainment"/>
                                         <ComboBoxItem Content="Geography"/>
                                         <ComboBoxItem Content="Literature"/>
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                                    <TextBlock Text="Difficulty:" Margin="0,0,0,5"/>
-                                    <ComboBox x:Name="QuestionDifficultyComboBox" Height="30">
-                                        <ComboBoxItem Content="Easy"/>
-                                        <ComboBoxItem Content="Medium"/>
-                                        <ComboBoxItem Content="Hard"/>
                                     </ComboBox>
                                 </StackPanel>
                             </Grid>

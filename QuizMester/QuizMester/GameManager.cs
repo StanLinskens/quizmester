@@ -11,7 +11,7 @@ namespace QuizMester
         public int QuestionId { get; set; }
         public int CategoryId { get; set; }
         public string QuestionText { get; set; }
-        public int TimeLimitSeconds { get; set; }
+        public int TimeLimitSeconds { get; set; } = 60;
         public List<AnswerDto> Answers { get; set; } = new();
     }
 
@@ -83,10 +83,56 @@ namespace QuizMester
             };
         }
 
+        // NEW: create a special session with random questions across all categories
+        public async Task<GameSession> CreateSpecialGameSessionAsync(int userId, int questionCount = 10)
+        {
+            // choose a valid CategoryId to satisfy Games FK (pick first category)
+            int categoryIdForGames = 0;
+            string categoryNameForGames = "Special";
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand("SELECT TOP(1) CategoryId, Name FROM Categories", conn))
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        categoryIdForGames = reader.GetInt32(0);
+                        categoryNameForGames = reader.IsDBNull(1) ? "Special" : reader.GetString(1);
+                    }
+                    else
+                    {
+                        // no categories exist: still allow creating row with CategoryId = 0 (assumes DB allows)
+                        categoryIdForGames = 0;
+                    }
+                }
+            }
+
+            int gameId;
+            const string insertGameSql = @"INSERT INTO Games (UserId, CategoryId) OUTPUT INSERTED.GameId VALUES (@UserId, @CategoryId)";
+            await using (var conn2 = new SqlConnection(_connectionString))
+            {
+                await conn2.OpenAsync();
+                await using var cmd = new SqlCommand(insertGameSql, conn2);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@CategoryId", categoryIdForGames);
+                gameId = (int)await cmd.ExecuteScalarAsync();
+            }
+
+            var questions = await GetRandomQuestionsAcrossAllAsync(questionCount);
+
+            return new GameSession
+            {
+                GameId = gameId,
+                UserId = userId,
+                CategoryId = categoryIdForGames,
+                CategoryName = "SpecialMode",
+                Questions = questions
+            };
+        }
+
         private async Task<List<QuestionDto>> GetRandomQuestionsWithAnswersAsync(int categoryId, int count)
         {
-            // Note: TOP @count with parameterization for SQL Server requires building SQL (can't parameterize TOP in older servers).
-            // We'll use TOP (@count) as a workaround with sp_executesql, but simpler: fetch a bit more and take 'count' in memory.
             const string sql = @"
                 SELECT q.QuestionId, q.CategoryId, q.QuestionText, q.TimeLimitSeconds
                 FROM Questions q
@@ -115,10 +161,8 @@ namespace QuizMester
                     }
                 }
 
-                // Trim to requested count:
                 if (list.Count > count) list = list.GetRange(0, count);
 
-                // Load answers for all selected questions in one query
                 if (list.Count > 0)
                 {
                     var ids = string.Join(",", list.ConvertAll(q => q.QuestionId));
@@ -126,7 +170,73 @@ namespace QuizMester
                         SELECT AnswerId, QuestionId, AnswerText, IsCorrect
                         FROM Answers
                         WHERE QuestionId IN ({ids})
-                        ORDER BY AnswerId"; // preserve stable order
+                        ORDER BY AnswerId";
+                    await using var cmd2 = new SqlCommand(answersSql, conn);
+                    await using var reader2 = await cmd2.ExecuteReaderAsync();
+                    var answerGroups = new Dictionary<int, List<AnswerDto>>();
+                    while (await reader2.ReadAsync())
+                    {
+                        var a = new AnswerDto
+                        {
+                            AnswerId = reader2.GetInt32(0),
+                            QuestionId = reader2.GetInt32(1),
+                            AnswerText = reader2.GetString(2),
+                            IsCorrect = reader2.GetBoolean(3)
+                        };
+                        if (!answerGroups.ContainsKey(a.QuestionId)) answerGroups[a.QuestionId] = new List<AnswerDto>();
+                        answerGroups[a.QuestionId].Add(a);
+                    }
+
+                    foreach (var q in list)
+                    {
+                        if (answerGroups.TryGetValue(q.QuestionId, out var answers))
+                            q.Answers = answers;
+                    }
+                }
+            }
+
+            return list;
+        }
+
+        // NEW: random questions across all categories
+        private async Task<List<QuestionDto>> GetRandomQuestionsAcrossAllAsync(int count)
+        {
+            const string sql = @"
+                SELECT q.QuestionId, q.CategoryId, q.QuestionText, q.TimeLimitSeconds
+                FROM Questions q
+                ORDER BY NEWID()";
+
+            var list = new List<QuestionDto>();
+            await using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+
+                await using (var cmd = new SqlCommand(sql, conn))
+                {
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var q = new QuestionDto
+                        {
+                            QuestionId = reader.GetInt32(0),
+                            CategoryId = reader.GetInt32(1),
+                            QuestionText = reader.GetString(2),
+                            TimeLimitSeconds = reader.IsDBNull(3) ? 30 : reader.GetInt32(3)
+                        };
+                        list.Add(q);
+                    }
+                }
+
+                if (list.Count > count) list = list.GetRange(0, count);
+
+                if (list.Count > 0)
+                {
+                    var ids = string.Join(",", list.ConvertAll(q => q.QuestionId));
+                    var answersSql = $@"
+                        SELECT AnswerId, QuestionId, AnswerText, IsCorrect
+                        FROM Answers
+                        WHERE QuestionId IN ({ids})
+                        ORDER BY AnswerId";
                     await using var cmd2 = new SqlCommand(answersSql, conn);
                     await using var reader2 = await cmd2.ExecuteReaderAsync();
                     var answerGroups = new Dictionary<int, List<AnswerDto>>();

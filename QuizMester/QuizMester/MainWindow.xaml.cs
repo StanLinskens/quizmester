@@ -61,6 +61,9 @@ namespace QuizMester
             SkipQuestionButton.Click += SkipQuestionButton_Click;
             QuitQuizButton.Click += QuitQuizButton_Click;
 
+            SaveQuestionButton.Click += SaveQuestionButton_Click;
+            CancelQuestionButton.Click += CancelQuestionButton_Click;
+
             LoadScoreboard();
 
             // Load initial data
@@ -220,86 +223,294 @@ namespace QuizMester
             var button = (Button)sender;
             int questionId = Convert.ToInt32(button.Tag);
 
-            string query = "SELECT * FROM Questions WHERE Id=@Id";
+            string qQuery = @"
+        SELECT QuestionId, CategoryId, QuestionText, TimeLimitSeconds
+        FROM Questions
+        WHERE QuestionId = @Id";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
-            using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                cmd.Parameters.AddWithValue("@Id", questionId);
                 conn.Open();
 
-                using (SqlDataReader reader = cmd.ExecuteReader())
+                int categoryId = -1;
+                string difficulty = null;
+                string questionText = "";
+                int timeLimit = 30;
+
+                using (SqlCommand cmd = new SqlCommand(qQuery, conn))
                 {
-                    if (reader.Read())
+                    cmd.Parameters.AddWithValue("@Id", questionId);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        _editingQuestionId = questionId;
-                        QuestionDialogTitle.Text = "Edit Question";
+                        if (!reader.Read())
+                        {
+                            MessageBox.Show($"Question {questionId} not found.", "Edit Question", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
 
-                        QuestionCategoryComboBox.SelectedItem = QuestionCategoryComboBox.Items.Cast<ComboBoxItem>()
-                            .FirstOrDefault(i => i.Content.ToString() == reader["Category"].ToString());
-
-                        QuestionDifficultyComboBox.SelectedItem = QuestionDifficultyComboBox.Items.Cast<ComboBoxItem>()
-                            .FirstOrDefault(i => i.Content.ToString() == reader["Difficulty"].ToString());
-
-                        QuestionTextBox.Text = reader["QuestionText"].ToString();
-                        AnswerATextBox.Text = reader["AnswerA"].ToString();
-                        AnswerBTextBox.Text = reader["AnswerB"].ToString();
-                        AnswerCTextBox.Text = reader["AnswerC"].ToString();
-                        AnswerDTextBox.Text = reader["AnswerD"].ToString();
-
-                            // Open the question dialog using the centralized grid switch
-                            changeGrid(QuestionDialogOverlay);
+                        categoryId = reader["CategoryId"] != DBNull.Value ? Convert.ToInt32(reader["CategoryId"]) : -1;
+                        questionText = reader["QuestionText"]?.ToString() ?? "";
+                        timeLimit = reader["TimeLimitSeconds"] != DBNull.Value ? Convert.ToInt32(reader["TimeLimitSeconds"]) : 30;
                     }
                 }
+
+                // map category id to combo box by name
+                if (categoryId > 0)
+                {
+                    using (SqlCommand catCmd = new SqlCommand("SELECT Name FROM Categories WHERE CategoryId = @CategoryId", conn))
+                    {
+                        catCmd.Parameters.AddWithValue("@CategoryId", categoryId);
+                        var catNameObj = catCmd.ExecuteScalar();
+                        if (catNameObj != null && catNameObj != DBNull.Value)
+                        {
+                            string catName = catNameObj.ToString();
+                            QuestionCategoryComboBox.SelectedItem = QuestionCategoryComboBox.Items
+                                .Cast<ComboBoxItem>()
+                                .FirstOrDefault(i => i.Content.ToString() == catName);
+                        }
+                        else
+                        {
+                            QuestionCategoryComboBox.SelectedIndex = -1;
+                        }
+                    }
+                }
+                else
+                {
+                    QuestionCategoryComboBox.SelectedIndex = -1;
+                }
+
+                // difficulty
+                if (!string.IsNullOrEmpty(difficulty))
+                {
+                    QuestionDifficultyComboBox.SelectedItem = QuestionDifficultyComboBox.Items
+                        .Cast<ComboBoxItem>()
+                        .FirstOrDefault(i => i.Content.ToString() == difficulty);
+                    if (QuestionDifficultyComboBox.SelectedItem == null)
+                        QuestionDifficultyComboBox.SelectedIndex = -1;
+                }
+                else
+                {
+                    QuestionDifficultyComboBox.SelectedIndex = -1;
+                }
+
+                QuestionTextBox.Text = questionText;
+
+                // Load answers for this question
+                var answers = new List<(int Id, string Text, bool IsCorrect)>();
+                using (SqlCommand ansCmd = new SqlCommand("SELECT AnswerId, AnswerText, IsCorrect FROM Answers WHERE QuestionId = @QId ORDER BY AnswerId", conn))
+                {
+                    ansCmd.Parameters.AddWithValue("@QId", questionId);
+                    using (SqlDataReader ar = ansCmd.ExecuteReader())
+                    {
+                        while (ar.Read())
+                        {
+                            answers.Add((
+                                Id: Convert.ToInt32(ar["AnswerId"]),
+                                Text: ar["AnswerText"]?.ToString() ?? string.Empty,
+                                IsCorrect: Convert.ToBoolean(ar["IsCorrect"])
+                            ));
+                        }
+                    }
+                }
+
+                // Reset UI fields/tags
+                AnswerATextBox.Text = AnswerBTextBox.Text = AnswerCTextBox.Text = AnswerDTextBox.Text = "";
+                AnswerATextBox.Tag = AnswerBTextBox.Tag = AnswerCTextBox.Tag = AnswerDTextBox.Tag = null;
+
+                // Put correct answer in A (if present), else use first answer as A.
+                var correct = answers.FirstOrDefault(a => a.IsCorrect);
+                List<(int Id, string Text, bool IsCorrect)> others;
+                if (answers.Any(a => a.IsCorrect))
+                {
+                    AnswerATextBox.Text = correct.Text;
+                    AnswerATextBox.Tag = correct.Id;
+                    others = answers.Where(a => a.Id != correct.Id).ToList();
+                }
+                else
+                {
+                    if (answers.Count > 0)
+                    {
+                        AnswerATextBox.Text = answers[0].Text;
+                        AnswerATextBox.Tag = answers[0].Id;
+                        others = answers.Skip(1).ToList();
+                    }
+                    else
+                    {
+                        others = new List<(int, string, bool)>();
+                    }
+                }
+
+                // Fill B, C, D with remaining answers (if any)
+                if (others.Count >= 1)
+                {
+                    AnswerBTextBox.Text = others[0].Text;
+                    AnswerBTextBox.Tag = others[0].Id;
+                }
+                if (others.Count >= 2)
+                {
+                    AnswerCTextBox.Text = others[1].Text;
+                    AnswerCTextBox.Tag = others[1].Id;
+                }
+                if (others.Count >= 3)
+                {
+                    AnswerDTextBox.Text = others[2].Text;
+                    AnswerDTextBox.Tag = others[2].Id;
+                }
+
+                // Open editor overlay
+                _editingQuestionId = questionId;
+                QuestionDialogTitle.Text = "Edit Question";
+                changeGrid(QuestionDialogOverlay);
             }
         }
 
         private void SaveQuestionButton_Click(object sender, RoutedEventArgs e)
         {
-            string category = (QuestionCategoryComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
-            string difficulty = (QuestionDifficultyComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
-            string question = QuestionTextBox.Text;
-            string answerA = AnswerATextBox.Text;
-            string answerB = AnswerBTextBox.Text;
-            string answerC = AnswerCTextBox.Text;
-            string answerD = AnswerDTextBox.Text;
+            string categoryName = (QuestionCategoryComboBox.SelectedItem as ComboBoxItem)?.Content.ToString();
+            string question = QuestionTextBox.Text?.Trim() ?? "";
+            string answerA = AnswerATextBox.Text?.Trim() ?? "";
+            string answerB = AnswerBTextBox.Text?.Trim() ?? "";
+            string answerC = AnswerCTextBox.Text?.Trim() ?? "";
+            string answerD = AnswerDTextBox.Text?.Trim() ?? "";
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            using (SqlCommand cmd = conn.CreateCommand())
+            if (string.IsNullOrWhiteSpace(question))
             {
-                if (_editingQuestionId == null)
-                {
-                    // INSERT
-                    cmd.CommandText = @"INSERT INTO Questions (Category, Difficulty, QuestionText, AnswerA, AnswerB, AnswerC, AnswerD)
-                                VALUES (@Category, @Difficulty, @QuestionText, @AnswerA, @AnswerB, @AnswerC, @AnswerD)";
-                }
-                else
-                {
-                    // UPDATE
-                    cmd.CommandText = @"UPDATE Questions 
-                                SET Category=@Category, Difficulty=@Difficulty, QuestionText=@QuestionText,
-                                    AnswerA=@AnswerA, AnswerB=@AnswerB, AnswerC=@AnswerC, AnswerD=@AnswerD
-                                WHERE Id=@Id";
-                    cmd.Parameters.AddWithValue("@Id", _editingQuestionId);
-                }
-
-                cmd.Parameters.AddWithValue("@Category", category ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@Difficulty", difficulty ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@QuestionText", question);
-                cmd.Parameters.AddWithValue("@AnswerA", answerA);
-                cmd.Parameters.AddWithValue("@AnswerB", answerB);
-                cmd.Parameters.AddWithValue("@AnswerC", answerC);
-                cmd.Parameters.AddWithValue("@AnswerD", answerD);
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                MessageBox.Show("Question text cannot be empty.", "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
-                _editingQuestionId = null; // reset
-                LoadQuestions(); // refresh DataGrid
+            try
+            {
+                using (var conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
 
-                // Return to the admin screen after saving
+                    // Resolve CategoryId from selected name (if any)
+                    int? categoryId = null;
+                    if (!string.IsNullOrEmpty(categoryName))
+                    {
+                        using (var catCmd = new SqlCommand("SELECT CategoryId FROM Categories WHERE Name = @Name", conn))
+                        {
+                            catCmd.Parameters.AddWithValue("@Name", categoryName);
+                            var obj = catCmd.ExecuteScalar();
+                            if (obj != null && obj != DBNull.Value) categoryId = Convert.ToInt32(obj);
+                        }
+                    }
+
+                    // Insert or update question
+                    if (_editingQuestionId == null)
+                    {
+                        string insertQ = @"
+                    INSERT INTO Questions (CategoryId, QuestionText, TimeLimitSeconds)
+                    VALUES (@CategoryId, @QuestionText, @TimeLimitSeconds);
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                        using (var cmd = new SqlCommand(insertQ, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@CategoryId", categoryId ?? (object)DBNull.Value);
+                            cmd.Parameters.AddWithValue("@QuestionText", question);
+                            cmd.Parameters.AddWithValue("@TimeLimitSeconds", 30);
+                            var newQId = cmd.ExecuteScalar();
+                            _editingQuestionId = newQId != null && newQId != DBNull.Value ? Convert.ToInt32(newQId) : null;
+                        }
+                    }
+                    else
+                    {
+                        string updateQ = @"
+                    UPDATE Questions
+                    SET CategoryId = @CategoryId, QuestionText = @QuestionText
+                    WHERE QuestionId = @Id";
+                        using (var cmd = new SqlCommand(updateQ, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@CategoryId", categoryId ?? (object)DBNull.Value);
+                            cmd.Parameters.AddWithValue("@QuestionText", question);
+                            cmd.Parameters.AddWithValue("@Id", _editingQuestionId.Value);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    if (_editingQuestionId == null)
+                    {
+                        MessageBox.Show("Could not create or locate question id.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // Prepare the answers from UI (A is treated as the correct one)
+                    var uiAnswers = new[]
+                    {
+                new { TextBox = AnswerATextBox, Text = answerA, IsCorrect = true },
+                new { TextBox = AnswerBTextBox, Text = answerB, IsCorrect = false },
+                new { TextBox = AnswerCTextBox, Text = answerC, IsCorrect = false },
+                new { TextBox = AnswerDTextBox, Text = answerD, IsCorrect = false }
+            };
+
+                    var updatedAnswerIds = new List<int>();
+
+                    foreach (var ui in uiAnswers)
+                    {
+                        string text = ui.Text?.Trim();
+                        if (string.IsNullOrEmpty(text)) continue;
+
+                        if (ui.TextBox.Tag != null && int.TryParse(ui.TextBox.Tag.ToString(), out int existingAnswerId))
+                        {
+                            // Update existing answer row
+                            string upd = "UPDATE Answers SET AnswerText = @AnswerText, IsCorrect = @IsCorrect WHERE AnswerId = @AnswerId";
+                            using (var cmd = new SqlCommand(upd, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@AnswerText", text);
+                                cmd.Parameters.AddWithValue("@IsCorrect", ui.IsCorrect);
+                                cmd.Parameters.AddWithValue("@AnswerId", existingAnswerId);
+                                cmd.ExecuteNonQuery();
+                            }
+                            updatedAnswerIds.Add(existingAnswerId);
+                        }
+                        else
+                        {
+                            // Insert new answer
+                            string ins = "INSERT INTO Answers (QuestionId, AnswerText, IsCorrect) VALUES (@QuestionId, @AnswerText, @IsCorrect); SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                            using (var cmd = new SqlCommand(ins, conn))
+                            {
+                                cmd.Parameters.AddWithValue("@QuestionId", _editingQuestionId.Value);
+                                cmd.Parameters.AddWithValue("@AnswerText", text);
+                                cmd.Parameters.AddWithValue("@IsCorrect", ui.IsCorrect);
+                                var newAnsId = cmd.ExecuteScalar();
+                                if (newAnsId != null && newAnsId != DBNull.Value) updatedAnswerIds.Add(Convert.ToInt32(newAnsId));
+                            }
+                        }
+                    }
+
+                    // Remove any leftover answers that the admin removed in the editor
+                    if (updatedAnswerIds.Count > 0)
+                    {
+                        var paramNames = updatedAnswerIds.Select((id, idx) => "@id" + idx).ToArray();
+                        string deleteSql = $"DELETE FROM Answers WHERE QuestionId = @QuestionId AND AnswerId NOT IN ({string.Join(",", paramNames)})";
+                        using (var cmd = new SqlCommand(deleteSql, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@QuestionId", _editingQuestionId.Value);
+                            for (int i = 0; i < updatedAnswerIds.Count; i++)
+                                cmd.Parameters.AddWithValue(paramNames[i], updatedAnswerIds[i]);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                    else
+                    {
+                        // No answers provided -> delete any existing answers (optional behavior)
+                        using (var cmd = new SqlCommand("DELETE FROM Answers WHERE QuestionId = @QuestionId", conn))
+                        {
+                            cmd.Parameters.AddWithValue("@QuestionId", _editingQuestionId.Value);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+
+                // Refresh UI
+                _editingQuestionId = null;
+                LoadQuestions();
                 changeGrid(AdminScreen);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to save question: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void CancelQuestionButton_Click(object sender, RoutedEventArgs e)
